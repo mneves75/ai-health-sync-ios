@@ -17,24 +17,24 @@ This directory contains video transcripts and production guidance for creating e
 | Video | Duration | Transcript | Status |
 |-------|----------|-----------|--------|
 | [Quick Start Guide](transcripts/01-quick-start.md) | 10:00 | ✅ Complete | 🎬 Script Ready |
-| [Your First Sync](transcripts/02-first-sync.md) | 12:00 | 📝 Planned | - |
-| [Understanding the UI](transcripts/03-ui-overview.md) | 8:00 | 📝 Planned | - |
+| Your First Sync | 12:00 | 📝 Planned | - |
+| Understanding the UI | 8:00 | 📝 Planned | - |
 
 ### Intermediate Level
 
 | Video | Duration | Transcript | Status |
 |-------|----------|-----------|--------|
 | [Swift 6 Concurrency](transcripts/02-swift6-concurrency.md) | 25:00 | ✅ Complete | 🎬 Script Ready |
-| [SwiftUI @Observation](transcripts/04-observation.md) | 18:00 | 📝 Planned | - |
-| [HealthKit Integration](transcripts/05-healthkit.md) | 20:00 | 📝 Planned | - |
+| SwiftUI @Observation | 18:00 | 📝 Planned | - |
+| HealthKit Integration | 20:00 | 📝 Planned | - |
 
 ### Advanced Level
 
 | Video | Duration | Transcript | Status |
 |-------|----------|-----------|--------|
-| [Architecture Deep Dive](transcripts/10-architecture.md) | 30:00 | 📝 Planned | - |
-| [Security & mTLS](transcripts/11-security.md) | 22:00 | 📝 Planned | - |
-| [Performance Optimization](transcripts/12-performance.md) | 25:00 | 📝 Planned | - |
+| Architecture Deep Dive | 30:00 | 📝 Planned | - |
+| Security & mTLS | 22:00 | 📝 Planned | - |
+| Performance Optimization | 25:00 | 📝 Planned | - |
 
 ---
 
@@ -423,8 +423,8 @@ Track these metrics for each video:
 ## See Also
 
 - **[Learning Guide](../learn/00-welcome.md)** - Comprehensive written tutorials
-- **[Code Examples](../../examples/)** - Runnable Swift examples
 - **[How-To Guides](../how-to/)** - Step-by-step instructions
+- **[Reference](../reference/)** - Technical documentation
 
 ---
 

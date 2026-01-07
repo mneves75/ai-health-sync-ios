@@ -689,10 +689,10 @@ When reporting, include:
 ## 📚 Related Documentation
 
 - [Quick Start Guide](QUICKSTART.md)
-- [Architecture Reference](docs/reference/architecture.md)
-- [HealthKit Guide](docs/how-to/healthkit-setup.md)
-- [Security Overview](docs/explanation/security-model.md)
-- [Development Guide](docs/contributing/development.md)
+- [Architecture Reference](./reference/architecture.md)
+- [HealthKit Guide](./learn/06-healthkit.md)
+- [Security Overview](./learn/07-security.md)
+- [Contributing Guide](../CONTRIBUTING.md)
 
 ---
 

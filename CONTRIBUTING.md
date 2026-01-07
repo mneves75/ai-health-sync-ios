@@ -586,10 +586,10 @@ Would you like help implementing this?"
 
 ## 📚 Additional Resources
 
-- [Architecture Overview](docs/reference/architecture.md)
-- [Development Guide](docs/contributing/development.md)
-- [Testing Guide](docs/contributing/testing.md)
-- [Documentation Guide](docs/contributing/documentation.md)
+- [Architecture Overview](DOCS/learn/02-architecture.md)
+- [Testing Guide](DOCS/learn/10-testing.md)
+- [CLI Reference](DOCS/learn/09-cli.md)
+- [Security Guide](DOCS/learn/07-security.md)
 
 ---
 

@@ -506,7 +506,7 @@ gtag('event', 'feedback', {
 
 - **[Accessibility Guide](./ACCESSIBILITY.md)** - WCAG compliance helps SEO
 - **[Metrics Guide](./METRICS.md)** - Measuring documentation success
-- **[Writing Guide](./contributing/documentation.md)** - Content standards
+- **[Contributing Guide](../CONTRIBUTING.md)** - Contribution guidelines
 
 ---
 

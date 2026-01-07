@@ -23,17 +23,21 @@ Tutorials are **lessons that take you by the hand** through a series of steps to
 
 | Tutorial | Time | What You'll Build |
 |----------|------|-------------------|
-| [Your First Health Data Sync](./first-sync.md) | 30 min | Sync steps from iPhone to Mac |
-| [Building a Custom Data Type](./custom-datatype.md) | 45 min | Add blood oxygen support |
-| [Creating a Custom View](./custom-view.md) | 60 min | Build a heart rate graph |
+| Your First Health Data Sync | 30 min | Sync steps from iPhone to Mac |
+| Building a Custom Data Type | 45 min | Add blood oxygen support |
+| Creating a Custom View | 60 min | Build a heart rate graph |
+
+*Note: Tutorial content is being developed. See [Learning Guide](../learn/00-welcome.md) for comprehensive learning resources.*
 
 ### Advanced Tutorials
 
 | Tutorial | Time | What You'll Build |
 |----------|------|-------------------|
-| [Implementing a New API Endpoint](./api-endpoint.md) | 90 min | Custom server endpoint |
-| [Adding Data Encryption](./encryption.md) | 120 min | End-to-end encryption layer |
-| [Building Offline Support](./offline.md) | 180 min | Cache and sync architecture |
+| Implementing a New API Endpoint | 90 min | Custom server endpoint |
+| Adding Data Encryption | 120 min | End-to-end encryption layer |
+| Building Offline Support | 180 min | Cache and sync architecture |
+
+*Note: Advanced tutorials coming soon.*
 
 ---
 

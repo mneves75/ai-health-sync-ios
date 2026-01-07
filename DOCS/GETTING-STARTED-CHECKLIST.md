@@ -204,19 +204,19 @@ After completing setup, verify everything works:
 Now that you're set up, explore:
 
 ### For Learning
-- [ ] Read the [Learning Guide](learn/00-welcome.md)
-- [ ] Try the [Code Examples](../examples/)
-- [ ] Study the [Architecture](reference/architecture.md)
+- [ ] Read the [Learning Guide](./learn/00-welcome.md)
+- [ ] Study the [Architecture](./reference/architecture.md)
+- [ ] Learn about [Security](./learn/07-security.md)
 
 ### For Development
-- [ ] Review [Development Guide](contributing/development.md)
-- [ ] Check [API Documentation](reference/api/)
+- [ ] Review [Contributing Guide](../CONTRIBUTING.md)
+- [ ] Check [CLI Reference](./learn/09-cli.md)
 - [ ] Explore the [Codebase](../README.md#project-structure)
 
 ### For Using
-- [ ] Read [How-To Guides](how-to/index.md)
-- [ ] Explore [CLI Commands](reference/cli-commands.md)
-- [ ] Customize [Data Types](how-to/configure-data-types.md)
+- [ ] Read [How-To Guides](./how-to/README.md)
+- [ ] Try [Pairing Devices](./how-to/pair-devices.md)
+- [ ] Check [Troubleshooting](./TROUBLESHOOTING.md)
 
 ---
 
@@ -259,7 +259,7 @@ You've successfully completed setup when:
 ### Common Issues
 - See [Quick Start Troubleshooting](QUICKSTART.md#troubleshooting)
 - Check [Full Troubleshooting Guide](TROUBLESHOOTING.md)
-- Review [Known Issues](../issues/)
+- Review [GitHub Issues](https://github.com/mneves75/ai-health-sync-ios/issues)
 
 ### Get Help
 - 📖 [Browse Documentation](../README.md)
@@ -276,4 +276,4 @@ You've successfully completed setup when:
 
 **🎉 Congratulations!** You're all set up with iOS Health Sync.
 
-Ready to explore? Start with [What This App Does](learn/01-overview.md) or jump to [How-To Guides](how-to/index.md).
+Ready to explore? Start with [What This App Does](./learn/01-overview.md) or jump to [How-To Guides](./how-to/README.md).

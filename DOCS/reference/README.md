@@ -24,107 +24,28 @@ Reference docs contain **technical specifications** - exact information about AP
 | Document | Description |
 |----------|-------------|
 | [Architecture Overview](./architecture.md) | System design and layers |
-| [Data Flow](./data-flow.md) | Request/response lifecycle |
-| [Service Architecture](./services.md) | Actor-based service design |
-| [Security Model](./security.md) | Encryption and authentication |
+| [Data Flows](./data-flows.md) | Request/response lifecycle |
+| [Security Model](../learn/07-security.md) | Encryption and authentication |
+| [Networking](../learn/08-networking.md) | HTTP server and TLS |
 
 ### APIs & Components
 
 | Document | Description |
 |----------|-------------|
-| [HealthKitService API](./api/healthkit-service.md) | Health data access |
-| [NetworkServer API](./api/network-server.md) | HTTP server endpoints |
-| [PairingService API](./api/pairing-service.md) | Device pairing |
-| [KeychainStore API](./api/keychain-store.md) | Secure storage |
-| [AuditService API](./api/audit-service.md) | Logging and compliance |
+| [HealthKitService API](./api/healthkit-service-api.md) | Health data access |
+| [HealthKit Integration](../learn/06-healthkit.md) | HealthKit concepts |
+| [CLI Reference](../learn/09-cli.md) | Command-line tool |
 
-### Data Models
+### Learning Resources
 
-| Document | Description |
-|----------|-------------|
-| [HealthDataType Enum](./models/health-data-type.md) | Supported health metrics |
-| [HealthSampleDTO](./models/health-sample-dto.md) | Data transfer object |
-| [SyncConfiguration](./models/sync-configuration.md) | User settings model |
-| [PairingToken](./models/pairing-token.md) | Pairing credentials |
+For in-depth explanations, see the [Learning Guide](../learn/00-welcome.md):
 
-### Configuration
-
-| Document | Description |
-|----------|-------------|
-| [Environment Variables](./config/env-vars.md) | CLI configuration |
-| [Info.plist Keys](./config/info-plist.md) | iOS app permissions |
-| [Entitlements](./config/entitlements.md) | Capabilities and access |
-| [Build Settings](./config/build-settings.md) | Xcode configuration |
-
-### CLI Commands
-
-| Document | Description |
-|----------|-------------|
-| [CLI Overview](./cli/index.md) | Command-line tool introduction |
-| [Command Reference](./cli/commands.md) | All commands and options |
-| [Exit Codes](./cli/exit-codes.md) | Error codes and meanings |
-
----
-
-## Finding What You Need
-
-**By Component:**
-- Need **HealthKit**? → [HealthKitService API](./api/healthkit-service.md)
-- Need **networking**? → [NetworkServer API](./api/network-server.md)
-- Need **security**? → [Security Model](./security.md)
-
-**By Task:**
-- Setting up → [Configuration](#configuration)
-- Troubleshooting → [Exit Codes](./cli/exit-codes.md)
-- Understanding → [Architecture](#architecture)
-
-**By Format:**
-- Quick lookup → [CLI Commands](#cli-commands)
-- API details → [APIs & Components](#apis--components)
-- Data structures → [Data Models](#data-models)
-
----
-
-## Reference Format
-
-Each reference page follows this structure:
-
-```markdown
-# [Component Name]
-
-**Type:** Actor/Class/Struct/Enum/Protocol
-**Module:** Services/Models/Utilities/etc.
-**Availability:** iOS 26.0+
-
-## Declaration
-```swift
-[Swift declaration]
-```
-
-## Overview
-[Brief description of purpose]
-
-## Topics
-
-### [Property/Method 1]
-[Signature]
-[Description]
-[Parameters]
-[Returns]
-[Throws]
-
-### [Property/Method 2]
-[...]
-
-## Relationships
-- Inherits from: ...
-- Conforms to: ...
-- Used by: ...
-
-## See Also
-- [Related Component]
-- [Discussion]
-```
+| Topic | Description |
+|-------|-------------|
+| [Swift 6 Concurrency](../learn/03-swift6.md) | Actor-based design |
+| [SwiftUI](../learn/04-swiftui.md) | UI framework patterns |
+| [SwiftData](../learn/05-swiftdata.md) | Persistence layer |
+| [Testing](../learn/10-testing.md) | Test strategies |
 
 ---
 
@@ -172,7 +93,7 @@ healthsync version       # Show version info
 
 - **[Tutorials](../tutorials/)** - Learning-oriented lessons
 - **[How-To Guides](../how-to/)** - Goal-oriented instructions
-- **[Explanation](../explanation/)** - Conceptual understanding
+- **[Learning Guide](../learn/00-welcome.md)** - Conceptual understanding
 - **[Diataxis Framework](https://diataxis.fr/)** - About this documentation system
 
 ---

@@ -140,16 +140,16 @@ swift build
 ## 🎯 What's Next?
 
 **For Learners:**
-- Read the [Learning Guide](docs/learn/00-welcome.md) for comprehensive tutorial
-- Start with [Chapter 1: What This App Does](docs/learn/01-overview.md)
+- Read the [Learning Guide](./learn/00-welcome.md) for comprehensive tutorial
+- Start with [Chapter 1: What This App Does](./learn/01-overview.md)
 
 **For Developers:**
-- Check [Architecture Overview](docs/reference/architecture.md)
-- See [Development Guide](docs/contributing/development.md)
+- Check [Architecture Overview](./reference/architecture.md)
+- See [Contributing Guide](../CONTRIBUTING.md)
 
 **For Users:**
-- Read [How-To Guides](docs/how-to/index.md)
-- See [CLI Reference](docs/reference/cli-commands.md)
+- Read [How-To Guides](./how-to/README.md)
+- See [CLI Reference](./learn/09-cli.md)
 
 ---
 
@@ -260,15 +260,15 @@ swift build
 **Complete Beginner?** Start here:
 
 1. ⏱️ **Now** (10 min) - Complete this Quick Start
-2. ⏱️ **Today** (1 hour) - Read [What This App Does](docs/learn/01-overview.md)
-3. ⏱️ **Week 1** - Complete [Learning Guide Chapters 1-3](docs/learn/00-welcome.md)
+2. ⏱️ **Today** (1 hour) - Read [What This App Does](./learn/01-overview.md)
+3. ⏱️ **Week 1** - Complete [Learning Guide Chapters 1-3](./learn/00-welcome.md)
 4. ⏱️ **Week 2** - Build your first feature
 
 **Already Know iOS/Swift?** Jump to:
 
-- [Architecture Reference](docs/reference/architecture.md)
-- [API Documentation](docs/reference/api.md)
-- [Contributing Guide](docs/contributing/development.md)
+- [Architecture Reference](./reference/architecture.md)
+- [Security Overview](./learn/07-security.md)
+- [Contributing Guide](../CONTRIBUTING.md)
 
 ---
 
@@ -293,21 +293,21 @@ You've successfully set up the iOS Health Sync App! Here's what to do next:
 ```
 Quick Start ✅ → Learning Guide → Build Your First Feature
                       ↓
-                [docs/learn/](docs/learn/)
+                [learn/](./learn/)
 ```
 
 ### For Development
 ```
-Quick Start ✅ → Architecture → Development Guide → Contribute
+Quick Start ✅ → Architecture → Contributing Guide → Contribute
                       ↓              ↓
-                [docs/reference/](docs/reference/)  [docs/contributing/](docs/contributing/)
+                [reference/](./reference/)  [CONTRIBUTING.md](../CONTRIBUTING.md)
 ```
 
 ### For Using
 ```
 Quick Start ✅ → How-To Guides → Reference
                       ↓            ↓
-                [docs/how-to/](docs/how-to/)  [docs/reference/](docs/reference/)
+                [how-to/](./how-to/)  [reference/](./reference/)
 ```
 
 ---

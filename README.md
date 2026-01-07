@@ -193,7 +193,7 @@ healthsync fetch --types steps,heartRate --format json | jq '.samples'
 healthsync fetch --start "2025-01-01T00:00:00Z" --end "2025-01-07T23:59:59Z"
 ```
 
-**Full reference:** [CLI Command Reference](DOCS/reference/cli/commands.md)
+**Full reference:** [CLI Command Reference](DOCS/learn/09-cli.md)
 
 ---
 
@@ -215,7 +215,7 @@ healthsync fetch --start "2025-01-01T00:00:00Z" --end "2025-01-07T23:59:59Z"
 3. Mutual verification on every connection
 4. Certificate pinning prevents MITM attacks
 
-**Security details:** [Security Overview](DOCS/reference/security.md)
+**Security details:** [Security Overview](DOCS/learn/07-security.md)
 
 ### Local Network Enforcement
 
@@ -295,7 +295,7 @@ We welcome contributions! Please see:
 
 - [**CONTRIBUTING.md**](CONTRIBUTING.md) - Contributor guidelines
 - [**Good First Issues**](https://github.com/mneves75/ai-health-sync-ios/labels/good%20first%20issue) - Start here
-- [**Development Guide**](DOCS/contributing/development.md) - Setup and workflow
+- [**Development Guide**](CONTRIBUTING.md#development-setup) - Setup and workflow
 
 ### Quick Contribution Checklist
 
