@@ -1,0 +1,150 @@
+name: Documentation Quality Checks
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'DOCS/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'DOCS/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  link-check:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Check for broken links
+        run: |
+          chmod +x scripts/docs/check-links.sh
+          ./scripts/docs/check-links.sh
+        continue-on-error: false
+
+  code-examples:
+    name: Validate Code Examples
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Swift examples
+        run: |
+          chmod +x scripts/docs/check-code-examples.sh
+          ./scripts/docs/check-code-examples.sh
+        continue-on-error: true
+
+  markdown-lint:
+    name: Lint Markdown Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run markdownlint
+        uses: articulate/actions-markdownlint@v1
+        with:
+          config: .markdownlint.json
+          files: DOCS/**/*.md *.md
+        continue-on-error: true
+
+  spelling:
+    name: Check Spelling
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run spell checker
+        uses: rojopolis/spellcheck-github-actions@0.34.0
+        with:
+          source_files: DOCS/**/*.md *.md
+          config_path: .spellcheck.yml
+        continue-on-error: true
+
+  accessibility:
+    name: Accessibility Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check images have alt text
+        run: |
+          chmod +x scripts/docs/check-alt-text.sh
+          ./scripts/docs/check-alt-text.sh
+        continue-on-error: true
+
+  metrics:
+    name: Generate Metrics Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate report
+        run: |
+          chmod +x scripts/docs/generate-metrics-report.sh
+          ./scripts/docs/generate-metrics-report.sh
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-metrics
+          path: DOCS/metrics-report.md
+
+  version-check:
+    name: Check Version References
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for outdated version references
+        run: |
+          chmod +x scripts/docs/check-versions.sh
+          ./scripts/docs/check-versions.sh
+        continue-on-error: true
+
+  summary:
+    name: Documentation Quality Summary
+    runs-on: ubuntu-latest
+    needs: [link-check, code-examples, markdown-lint, spelling, accessibility, metrics]
+    if: always()
+    steps:
+      - name: Check job results
+        run: |
+          echo "Documentation Quality Check Summary"
+          echo "===================================="
+          echo ""
+          echo "Link Check: ${{ needs.link-check.result }}"
+          echo "Code Examples: ${{ needs.code-examples.result }}"
+          echo "Markdown Lint: ${{ needs.markdown-lint.result }}"
+          echo "Spelling: ${{ needs.spelling.result }}"
+          echo "Accessibility: ${{ needs.accessibility.result }}"
+          echo "Metrics: ${{ needs.metrics.result }}"
+          echo ""
+          echo "View detailed logs for each job above."
+
+      - name: Create status badge
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          # Create badge based on results
+          echo "Documentation quality checks completed"
+          # Add badge generation logic here if needed
