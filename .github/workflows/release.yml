@@ -1,0 +1,251 @@
+# Copyright 2026 Marcus Neves
+# SPDX-License-Identifier: Apache-2.0
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Prevent concurrent releases
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# Principle of least privilege - only grant what's needed
+permissions:
+  contents: write
+
+env:
+  CLI_NAME: healthsync
+  CLI_PATH: macOS/HealthSyncCLI
+
+jobs:
+  build:
+    name: Build macOS Binary
+    runs-on: macos-15
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [arm64, x86_64]
+    steps:
+      # Pinned to SHA for security (see: https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION"
+
+      - name: Build Release Binary
+        run: |
+          cd "$CLI_PATH"
+          swift build -c release --arch "${{ matrix.arch }}"
+
+      - name: Package Binary
+        run: |
+          cd "$CLI_PATH"
+          mkdir -p dist
+          BINARY_PATH=".build/release/$CLI_NAME"
+
+          # Verify binary exists
+          if [[ ! -f "$BINARY_PATH" ]]; then
+            echo "Error: Binary not found at $BINARY_PATH"
+            exit 1
+          fi
+
+          cp "$BINARY_PATH" dist/
+          cd dist
+
+          ARCHIVE_NAME="${CLI_NAME}-${{ steps.version.outputs.VERSION }}-macos-${{ matrix.arch }}.tar.gz"
+          tar -czvf "$ARCHIVE_NAME" "$CLI_NAME"
+          shasum -a 256 "$ARCHIVE_NAME" > "${ARCHIVE_NAME}.sha256"
+
+          echo "Created: $ARCHIVE_NAME"
+          cat "${ARCHIVE_NAME}.sha256"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ env.CLI_NAME }}-macos-${{ matrix.arch }}
+          path: |
+            ${{ env.CLI_PATH }}/dist/*.tar.gz
+            ${{ env.CLI_PATH }}/dist/*.sha256
+          retention-days: 7
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      arm64_sha256: ${{ steps.checksums.outputs.arm64_sha256 }}
+      x86_64_sha256: ${{ steps.checksums.outputs.x86_64_sha256 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download arm64 Artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ env.CLI_NAME }}-macos-arm64
+          path: dist/
+
+      - name: Download x86_64 Artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ env.CLI_NAME }}-macos-x86_64
+          path: dist/
+
+      - name: Create Source Archive
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          ARCHIVE_NAME="${CLI_NAME}-${VERSION}-source.zip"
+
+          git archive --format=zip --prefix="${CLI_NAME}-${VERSION}/" \
+            -o "dist/${ARCHIVE_NAME}" HEAD
+
+          cd dist
+          shasum -a 256 "$ARCHIVE_NAME" > "${ARCHIVE_NAME}.sha256"
+          echo "Created source archive:"
+          cat "${ARCHIVE_NAME}.sha256"
+
+      - name: Extract Checksums
+        id: checksums
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          ARM64_SHA=$(cat "dist/${CLI_NAME}-${VERSION}-macos-arm64.tar.gz.sha256" | awk '{print $1}')
+          X86_64_SHA=$(cat "dist/${CLI_NAME}-${VERSION}-macos-x86_64.tar.gz.sha256" | awk '{print $1}')
+
+          echo "arm64_sha256=$ARM64_SHA" >> "$GITHUB_OUTPUT"
+          echo "x86_64_sha256=$X86_64_SHA" >> "$GITHUB_OUTPUT"
+
+          echo "Checksums:"
+          echo "  ARM64:  $ARM64_SHA"
+          echo "  x86_64: $X86_64_SHA"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
+        with:
+          name: iOS Health Sync v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## iOS Health Sync v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+
+            **Homebrew (Recommended)**
+            ```bash
+            brew tap mneves75/tap
+            brew install healthsync
+            ```
+
+            **Manual Download**
+            | Platform | File |
+            |----------|------|
+            | Apple Silicon (M1/M2/M3/M4) | `healthsync-${{ steps.version.outputs.VERSION }}-macos-arm64.tar.gz` |
+            | Intel | `healthsync-${{ steps.version.outputs.VERSION }}-macos-x86_64.tar.gz` |
+            | Source Code | `healthsync-${{ steps.version.outputs.VERSION }}-source.zip` |
+
+            ### Checksums (SHA256)
+            ```
+            ${{ steps.checksums.outputs.arm64_sha256 }}  healthsync-${{ steps.version.outputs.VERSION }}-macos-arm64.tar.gz
+            ${{ steps.checksums.outputs.x86_64_sha256 }}  healthsync-${{ steps.version.outputs.VERSION }}-macos-x86_64.tar.gz
+            ```
+
+            ### What's New
+            See [CHANGELOG.md](https://github.com/mneves75/ai-health-sync-ios/blob/master/CHANGELOG.md)
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+
+  update-homebrew:
+    name: Update Homebrew Tap
+    needs: release
+    runs-on: ubuntu-latest
+    # Don't fail the release if tap update fails
+    continue-on-error: true
+    steps:
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Homebrew Tap
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: mneves75/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update Formula
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          ARM64_SHA: ${{ needs.release.outputs.arm64_sha256 }}
+          X86_64_SHA: ${{ needs.release.outputs.x86_64_sha256 }}
+        run: |
+          cat > homebrew-tap/Formula/healthsync.rb << EOF
+          # typed: false
+          # frozen_string_literal: true
+
+          # Copyright 2026 Marcus Neves
+          # SPDX-License-Identifier: Apache-2.0
+
+          class Healthsync < Formula
+            desc "Secure sync of Apple HealthKit data between iPhone and Mac"
+            homepage "https://github.com/mneves75/ai-health-sync-ios"
+            version "${VERSION}"
+            license "Apache-2.0"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/mneves75/ai-health-sync-ios/releases/download/v${VERSION}/healthsync-${VERSION}-macos-arm64.tar.gz"
+                sha256 "${ARM64_SHA}"
+              end
+              on_intel do
+                url "https://github.com/mneves75/ai-health-sync-ios/releases/download/v${VERSION}/healthsync-${VERSION}-macos-x86_64.tar.gz"
+                sha256 "${X86_64_SHA}"
+              end
+            end
+
+            depends_on macos: :sequoia
+
+            def install
+              bin.install "healthsync"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/healthsync --version")
+            end
+          end
+          EOF
+
+          echo "Updated formula to version ${VERSION}"
+          cat homebrew-tap/Formula/healthsync.rb
+
+      - name: Commit and Push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/healthsync.rb
+          git diff --staged --quiet || git commit -m "Update healthsync to ${{ steps.version.outputs.VERSION }}"
+          git push

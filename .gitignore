@@ -1,0 +1,92 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Thumbnails
+*.Trashes
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Sensitive files
+.env
+.env.*
+*.pem
+*.p12
+credentials.json
+secrets/
+
+# Build outputs
+build/
+dist/
+
+# Test artifacts
+*.xcresult
+TestResults/
+coverage/
+
+# Archives
+*.xcarchive
+
+# Code coverage
+*.profraw
+*.profdata
+
+# Crash logs
+*.crash
+*.ips
+
+# Debug logs (Firebase, etc.)
+*-debug.log
+
+# CocoaPods (if ever added)
+Pods/
+Podfile.lock
+
+# Carthage (if ever added)
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Claude Code
+.claude/
+
+# Build artifacts
+dist/
+
+# Homebrew tap (separate repo)
+homebrew-tap/
