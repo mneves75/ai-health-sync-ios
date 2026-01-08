@@ -233,7 +233,7 @@ jobs:
             end
 
             test do
-              assert_match version.to_s, shell_output("#{bin}/healthsync --version", 2)
+              assert_match version.to_s, shell_output("#{bin}/healthsync --version")
             end
           end
           EOF
