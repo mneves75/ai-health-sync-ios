@@ -319,6 +319,6 @@ print("Fetched \(allSamples.count) total samples")
 
 ---
 
-**API Documentation Version:** 1.0.0
+**API Documentation Version:** 1.0.1
 **Last Updated:** 2026-01-07
-**Based on:** iOS Health Sync App v1.0.0
+**Based on:** HealthSync Helper App v1.0.0

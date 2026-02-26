@@ -132,5 +132,5 @@ Each tutorial follows this format:
 
 ---
 
-**Tutorial Index Version:** 1.0.0
+**Tutorial Index Version:** 1.0.1
 **Last Updated:** 2026-01-07

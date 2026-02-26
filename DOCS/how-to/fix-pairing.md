@@ -103,7 +103,7 @@ nc -zv 192.168.1.100 8443
 ```
 
 On iPhone:
-- Settings → iOS Health Sync → Allow Local Network (must be ON)
+- Settings → HealthSync Helper App → Allow Local Network (must be ON)
 
 **3. Verify same network**
 
@@ -217,7 +217,7 @@ healthsync ping
 **2. Check HealthKit permissions**
 
 On iPhone:
-- Settings → Privacy & Security → Health → iOS Health Sync
+- Settings → Privacy & Security → Health → HealthSync Helper App
 - Ensure all required data types are enabled
 
 **3. Check server logs**
@@ -232,7 +232,7 @@ On iOS app:
 healthsync unpair
 healthsync scan
 
-# On iPhone: Force quit and reopen iOS Health Sync app
+# On iPhone: Force quit and reopen HealthSync Helper App
 ```
 
 ---
@@ -283,7 +283,7 @@ healthsync status
 ```
 
 ### On iPhone:
-1. Delete iOS Health Sync app
+1. Delete HealthSync Helper App
 2. Reinstall from App Store
 3. Grant HealthKit permissions again
 4. Start server and scan QR code

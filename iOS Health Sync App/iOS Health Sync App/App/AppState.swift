@@ -195,7 +195,7 @@ final class AppState {
             AppLoggers.app.info("Resolved host IP: \(host, privacy: .public)")
 
             let qr = await pairingService.generateQRCode(host: host, port: serverPort, fingerprint: serverFingerprint)
-            AppLoggers.app.info("Generated QR code: \(qr.code, privacy: .public), expires: \(qr.expiresAt, privacy: .public)")
+            AppLoggers.app.info("Generated pairing QR code; expires: \(qr.expiresAt, privacy: .public)")
             pairingQRCode = qr
 
             await auditService.record(eventType: "api.server_start", details: ["port": String(serverPort)])

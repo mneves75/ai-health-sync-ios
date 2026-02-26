@@ -85,6 +85,12 @@ fastlane/test_output
 # Claude Code
 .claude/
 
+# Cachebro
+.cachebro/
+
+# OMC state
+.omc/
+
 # Build artifacts
 dist/
 

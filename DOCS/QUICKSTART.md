@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-**Get the iOS Health Sync App Running in 10 Minutes**
+**Get the HealthSync Helper App Running in 10 Minutes**
 
 ---
 
@@ -48,7 +48,7 @@ open "iOS Health Sync App/iOS Health Sync App.xcodeproj"
 
 ```
 ┌─────────────────────────────────────┐
-│  iOS Health Sync                     │
+│  HealthSync Helper App                     │
 ├─────────────────────────────────────┤
 │  ☑ Steps                             │
 │  ☐ Heart Rate                        │
@@ -208,7 +208,7 @@ swift build
 1. **Check Info.plist:** Ensure `NSHealthShareUsageDescription` exists
 2. **Re-request authorization:**
    - iOS Settings → Health → Data Access & Devices
-   - Find "iOS Health Sync"
+   - Find "HealthSync Helper App"
    - Enable all data types
 3. **Delete and reinstall app** (last resort)
 
@@ -287,7 +287,7 @@ swift build
 
 ## 📝 Next Steps
 
-You've successfully set up the iOS Health Sync App! Here's what to do next:
+You've successfully set up the HealthSync Helper App! Here's what to do next:
 
 ### For Learning
 ```
@@ -322,7 +322,7 @@ Quick Start ✅ → How-To Guides → Reference
 
 **Last Updated:** 2026-01-07
 
-**Quick Start Version:** 1.0.0
+**Quick Start Version:** 1.0.1
 
 ---
 

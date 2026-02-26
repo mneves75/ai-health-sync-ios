@@ -43,10 +43,10 @@ This guide explains how to optimize documentation for search engines (SEO) and o
 
 ### Keyword Brainstorming
 
-**For the iOS Health Sync app:**
+**For the HealthSync Helper App:**
 
 **Primary Keywords:**
-- iOS Health Sync
+- HealthSync Helper App
 - HealthKit data sync
 - iPhone health data to Mac
 - Local health sync
@@ -88,7 +88,7 @@ This guide explains how to optimize documentation for search engines (SEO) and o
 
 ✅ **Good:**
 ```markdown
-# iOS Health Sync: Secure HealthKit Data Sync from iPhone to Mac
+# HealthSync Helper App: Secure HealthKit Data Sync from iPhone to Mac
 ```
 
 ❌ **Bad:**
@@ -102,8 +102,8 @@ This guide explains how to optimize documentation for search engines (SEO) and o
 
 ```yaml
 ---
-title: "Quick Start Guide - iOS Health Sync"
-description: "Get iOS Health Sync running in 10 minutes. Learn how to install, pair devices, and fetch health data from your iPhone to Mac securely."
+title: "Quick Start Guide - HealthSync Helper App"
+description: "Get HealthSync Helper App running in 10 minutes. Learn how to install, pair devices, and fetch health data from your iPhone to Mac securely."
 keywords: [iOS, HealthKit, sync, tutorial, quick start]
 author: "Your Name"
 date: 2026-01-07
@@ -157,14 +157,14 @@ date: 2026-01-07
 **Example (QUICKSTART.md):**
 
 ```markdown
-# Quick Start: Install iOS Health Sync in 10 Minutes
+# Quick Start: Install HealthSync Helper App in 10 Minutes
 
-This guide shows you how to set up **iOS Health Sync** on your Mac and iPhone.
+This guide shows you how to set up **HealthSync Helper App** on your Mac and iPhone.
 You'll learn to install the app, pair devices, and fetch **HealthKit data** securely.
 
 ## What You'll Need
 
-Before installing **iOS Health Sync**, make sure you have...
+Before installing **HealthSync Helper App**, make sure you have...
 ```
 
 ---
@@ -539,7 +539,7 @@ gtag('event', 'feedback', {
 
 ---
 
-**SEO Guide Version:** 1.0.0
+**SEO Guide Version:** 1.0.1
 **Last Updated:** 2026-01-07
 **Next Review:** 2026-04-07
 

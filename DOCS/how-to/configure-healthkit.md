@@ -8,7 +8,7 @@
 **Difficulty:** Beginner
 **Prerequisites:**
 - [ ] Xcode 26 installed
-- [ ] iOS Health Sync project open in Xcode
+- [ ] HealthSync Helper App project open in Xcode
 - [ ] iOS device or simulator running iOS 26+
 
 ---
@@ -24,8 +24,8 @@ Configure HealthKit capabilities and request user authorization to read health d
 ### Step 1: Enable HealthKit Capability
 
 1. Open the project in Xcode
-2. Select **iOS Health Sync App** in the Project Navigator
-3. Select the **iOS Health Sync App** target
+2. Select **HealthSync Helper App** in the Project Navigator
+3. Select the **HealthSync Helper App** target
 4. Go to **Signing & Capabilities** tab
 5. Click **+ Capability**
 6. Search for **"HealthKit"** and add it
@@ -159,7 +159,7 @@ Use Apple Watch, iPhone motion sensors, or third-party apps to generate real hea
 **Solution:**
 1. Delete the app from device/simulator
 2. Reinstall and run again
-3. Or: Settings > Health > Data Access > iOS Health Sync > Reset Authorization
+3. Or: Settings > Health > Data Access > HealthSync Helper App > Reset Authorization
 
 ### Issue: "No health data returned"
 

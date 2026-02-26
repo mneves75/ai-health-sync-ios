@@ -729,7 +729,7 @@ when(mock.fetch(any())).thenReturn(data)
 
 ## Congratulations!
 
-You've completed the **iOS Health Sync Learning Guide**! 🎉
+You've completed the **HealthSync Helper App Learning Guide**! 🎉
 
 ### What You've Mastered
 

@@ -1,6 +1,6 @@
 # Accessibility Guide
 
-**Making iOS Health Sync Documentation Inclusive for Everyone**
+**Making HealthSync Helper App Documentation Inclusive for Everyone**
 
 ---
 
@@ -470,7 +470,7 @@ Please report it:
 
 ---
 
-**Accessibility Guide Version:** 1.0.0
+**Accessibility Guide Version:** 1.0.1
 **Last Updated:** 2026-01-07
 **Next Review:** 2026-04-07
 **WCAG Version:** 2.1 AA

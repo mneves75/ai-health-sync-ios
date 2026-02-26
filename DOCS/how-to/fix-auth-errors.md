@@ -1,5 +1,5 @@
-# Fix Authentication Errors: Resolve mTLS and Certificate Issues
-**Troubleshoot certificate-based authentication failures**
+# Fix Authentication Errors: Resolve TLS, Pinning, and Token Issues
+**Troubleshoot connection and authorization failures**
 
 ---
 
@@ -14,7 +14,7 @@
 
 ## Overview
 
-iOS Health Sync uses mutual TLS (mTLS) for authentication. Both the iPhone (server) and Mac (client) must present valid certificates. This guide helps resolve authentication failures.
+HealthSync Helper App secures requests with TLS 1.3 + certificate fingerprint pinning and bearer-token authorization after pairing. This guide helps resolve authentication failures.
 
 ---
 
@@ -43,6 +43,41 @@ CA Certificate:
   Subject: healthsync-ca
   Valid: 2026-01-07 to 2031-01-07
   Status: Valid
+```
+
+---
+
+## Error: "Missing or invalid token" (HTTP 401)
+
+### Symptoms
+
+```
+HTTP 401: Missing or invalid token
+```
+
+### Solutions
+
+**1. Re-run pairing to issue a fresh token**
+
+```bash
+healthsync scan
+```
+
+**2. Confirm Authorization header format in custom clients**
+
+Use:
+
+```http
+Authorization: Bearer <token>
+```
+
+Field name matching is case-insensitive (`Authorization` and `authorization` are accepted), but the value must keep the `Bearer <token>` format.
+
+**3. Clear stale local auth state**
+
+```bash
+healthsync unpair
+healthsync scan
 ```
 
 ---
@@ -294,7 +329,7 @@ Error: UNSUPPORTED_PROTOCOL
 
 ### Solution
 
-iOS Health Sync requires TLS 1.3:
+HealthSync Helper App requires TLS 1.3:
 ```bash
 # Check macOS version (must be 15+)
 sw_vers
@@ -379,7 +414,7 @@ healthsync status
 ```
 
 ### iPhone:
-1. Open iOS Health Sync app
+1. Open HealthSync Helper App
 2. Tap "Settings" → "Reset All Data"
 3. Confirm reset
 4. Restart app
@@ -401,8 +436,8 @@ healthsync status
 
 - **[Fix Pairing Issues](./fix-pairing.md)** - Connection problems
 - **[Generate Certificates](./generate-certificates.md)** - Manual certificate creation
-- **[Security Model](../explanation/security-model.md)** - How mTLS works
+- **[Security Model](../explanation/security-model.md)** - TLS, pinning, and token flow
 
 ---
 
-*Last updated: 2026-01-07*
+*Last updated: 2026-02-19*

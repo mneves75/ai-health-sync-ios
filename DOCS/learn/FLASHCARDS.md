@@ -1,4 +1,4 @@
-# Flashcards: iOS Health Sync Learning Guide
+# Flashcards: HealthSync Helper App Learning Guide
 
 **Active Recall Practice for All Chapters**
 
@@ -50,7 +50,7 @@
 
 ## Chapter 1: What This App Does
 
-### Q: What problem does the iOS Health Sync app solve?
+### Q: What problem does the HealthSync Helper App solve?
 <details>
 <summary>Click to see answer</summary>
 

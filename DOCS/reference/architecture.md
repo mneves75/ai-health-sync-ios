@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**iOS Health Sync App - System Design and Component Interaction**
+**HealthSync Helper App - System Design and Component Interaction**
 
 ---
 
@@ -48,7 +48,7 @@ graph TB
     CLI --> Client
     Client --> CertStore
 
-    Client <--->|mTLS 1.3| Network
+    Client <--->|TLS 1.3 + fingerprint pinning| Network
 
     style HealthKit fill:#e1f5ff
     style Network fill:#ffe1f5
@@ -186,13 +186,13 @@ sequenceDiagram
     participant HealthKit as HealthKitService
     participant HK as HealthKit Store
 
-    CLI->>Server: TCP + mTLS Handshake
-    Server->>Pairing: Verify Certificate
+    CLI->>Server: TLS handshake + fingerprint pinning
+    Server->>Pairing: Verify bearer token (except /api/v1/pair)
 
-    alt Certificate Not Paired
+    alt Token Missing/Invalid
         Pairing-->>Server: Reject
         Server-->>CLI: 401 Unauthorized
-    else Certificate Paired
+    else Token Valid
         Pairing-->>Server: OK
         Server->>HealthKit: fetchSamples(types, dates)
         HealthKit->>HK: Query with predicate
@@ -205,8 +205,8 @@ sequenceDiagram
 
 **Security Features:**
 - **TLS 1.3 only** - Minimum protocol version enforced
-- **Mutual authentication** - Both client and server present certificates
-- **Certificate pinning** - Server validates client certificate fingerprint
+- **Certificate pinning** - CLI validates server certificate fingerprint
+- **Bearer token auth** - Protected routes require token issued by pairing
 - **Local network only** - Bonjour discovery on `.local` domain
 
 </details>
@@ -221,9 +221,9 @@ sequenceDiagram
 flowchart TD
     Start[CLI: healthsync fetch] --> Parse[Parse arguments]
     Parse --> Discover[Discover device via Bonjour]
-    Discover --> Connect[TCP + mTLS connection]
+    Discover --> Connect[TLS connection + fingerprint pinning]
 
-    Connect --> Auth{Certificate paired?}
+    Connect --> Auth{Bearer token valid?}
 
     Auth -->|No| Error[401 Unauthorized]
     Auth -->|Yes| BuildRequest[Build HTTP POST request]
@@ -471,11 +471,11 @@ graph TB
 
 - **[Swift 6 Concurrency](../learn/03-swift6.md)** - How actors work
 - **[Network Server API](./api/network-server.md)** - Server endpoints
-- **[Security Model](./security.md)** - Certificate-based pairing
+- **[Security Model](./security.md)** - TLS, fingerprint pinning, and token auth
 - **[Data Flow](./data-flows.md)** - Request/response lifecycle
 
 ---
 
-**Architecture Documentation Version:** 1.0.0
-**Last Updated:** 2026-01-07
-**App Version:** 1.0.0
+**Architecture Documentation Version:** 1.0.1
+**Last Updated:** 2026-02-19
+**App Version:** 1.0.1

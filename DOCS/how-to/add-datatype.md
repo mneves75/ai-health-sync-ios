@@ -188,7 +188,7 @@ healthsync fetch --types bloodPressureSystolic
 
 1. Add test data to Health app:
    - Health > Browse > Vitals > Blood Pressure > Add Data
-2. Verify data appears in iOS Health Sync app
+2. Verify data appears in HealthSync Helper App
 3. Fetch via CLI
 
 **Expected output:**

@@ -1,6 +1,6 @@
 # Security Architecture
 
-iOS Health Sync implements defense-in-depth security for health data transfer.
+HealthSync Helper App implements defense-in-depth security for health data transfer.
 
 ## Threat Model
 

@@ -6,7 +6,7 @@
 
 ## Overview
 
-This directory contains runnable Swift code examples that demonstrate key concepts from the iOS Health Sync app. Each example is self-contained and can be run independently with the Swift compiler.
+This directory contains runnable Swift code examples that demonstrate key concepts from the HealthSync Helper App. Each example is self-contained and can be run independently with the Swift compiler.
 
 ## Prerequisites
 
@@ -121,7 +121,7 @@ swift 05-combine.swift
 
 ### 6. Real HealthKit Service (`06-real-healthkit-service.swift`) ⭐
 
-**Learn:** The ACTUAL HealthKitService from iOS Health Sync
+**Learn:** The ACTUAL HealthKitService from HealthSync Helper App
 
 **Topics covered:**
 - Real actor-based service architecture
@@ -132,7 +132,7 @@ swift 05-combine.swift
 - Error handling in real-world code
 
 **What makes this different:**
-This is extracted directly from the iOS Health Sync app - not a generic example.
+This is extracted directly from the HealthSync Helper App - not a generic example.
 
 **Run it:**
 ```bash
@@ -147,7 +147,7 @@ swift 06-real-healthkit-service.swift
 
 ### 7. Real Network Server (`07-network-server.swift`) ⭐ NEW
 
-**Learn:** The ACTUAL NetworkServer from iOS Health Sync
+**Learn:** The ACTUAL NetworkServer from HealthSync Helper App
 
 **Topics covered:**
 - Actor-based TLS 1.3 server
@@ -173,7 +173,7 @@ swift 07-network-server.swift
 
 ### 8. Real Pairing Service (`08-pairing-service.swift`) ⭐ NEW
 
-**Learn:** The ACTUAL PairingService from iOS Health Sync
+**Learn:** The ACTUAL PairingService from HealthSync Helper App
 
 **Topics covered:**
 - Secure token generation and validation
@@ -199,7 +199,7 @@ swift 08-pairing-service.swift
 
 ### 9. Real Certificate Service (`09-certificate-service.swift`) ⭐ NEW
 
-**Learn:** The ACTUAL CertificateService from iOS Health Sync
+**Learn:** The ACTUAL CertificateService from HealthSync Helper App
 
 **Topics covered:**
 - Keychain-based certificate storage
@@ -227,7 +227,7 @@ swift 09-certificate-service.swift
 
 ### ⚠️ Important Notes
 
-**These examples are designed for LEARNING Swift patterns**, not necessarily as standalone runnable scripts. They demonstrate concepts from the iOS Health Sync app but may require adjustments to run standalone.
+**These examples are designed for LEARNING Swift patterns**, not necessarily as standalone runnable scripts. They demonstrate concepts from the HealthSync Helper App but may require adjustments to run standalone.
 
 **Known Issues:**
 - Examples use `@main` attribute which requires Swift 6+
@@ -438,7 +438,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 
 ---
 
-**Examples Version:** 1.0.0
+**Examples Version:** 1.0.1
 **Last Updated:** 2025-01-07
 **Swift Version:** 5.9+
 

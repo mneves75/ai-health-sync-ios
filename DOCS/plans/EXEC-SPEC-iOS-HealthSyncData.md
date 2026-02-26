@@ -1,4 +1,4 @@
-# iOS Health Sync Local Network Export
+# HealthSync Helper App Local Network Export
 
 This ExecPlan is a living document. The sections Progress, Surprises & Discoveries, Decision Log, and Outcomes & Retrospective must be kept up to date as work proceeds.
 

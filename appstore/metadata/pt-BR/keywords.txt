@@ -1,0 +1,1 @@
+saúde,sincronizar,exportar,local,privado,CSV,frequência cardíaca,sono,passos,treino,sem nuvem,seguro

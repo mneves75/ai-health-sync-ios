@@ -1,0 +1,48 @@
+DEMO VIDEO INCLUDED — See App Review attachment for a 25-second video
+demonstrating the complete iPhone-to-Mac sync flow.
+
+This app does not require login. No demo credentials needed.
+
+=== WHAT YOU CAN TEST ON iPHONE ALONE ===
+
+1. Launch app → see status dashboard with version, HealthKit status, server status
+2. Tap "Request HealthKit Access" → iOS permission dialog appears (read-only)
+3. Browse all 31 supported health data types with toggle switches
+4. Tap "Start Sharing" → local HTTPS server starts, QR code + pairing code appear
+5. Tap "Stop Sharing" → server stops cleanly
+6. View real-time audit log (tracks every action: auth, server start/stop, data access)
+7. Tap "Refresh Code" → generates new short-lived pairing code (5-min expiry)
+8. Tap "Privacy Policy" → in-app privacy policy view (no internet needed)
+9. Tap "About" → app version and credits
+10. Tap "Revoke All Pairings" → clears all paired devices
+
+All UI is fully functional without a Mac. The QR code, server, audit log,
+and all controls work independently.
+
+=== WHAT THE DEMO VIDEO SHOWS ===
+
+The attached video demonstrates the complete sync flow requiring both devices:
+
+1. iPhone: Start Sharing → QR code appears with TLS fingerprint + pairing code
+2. Mac Terminal: `healthsync scan` reads QR data → secure TLS 1.3 handshake
+3. Mac Terminal: `healthsync fetch --types steps,heartRate` → health data in JSON
+4. iPhone: Audit log updates in real-time showing each data access event
+5. iPhone: Stop Sharing → server terminates, all connections closed
+
+=== HEALTHKIT COMPLIANCE (Guidelines 2.5.1, 5.1.1, 5.1.3) ===
+
+- HealthKit is the app's core and only functionality
+- Health data is NOT stored in iCloud, NOT used for ads/marketing/mining
+- Health data transfers occur ONLY over local WiFi (TLS 1.3 encrypted)
+- Zero third-party SDKs, zero analytics, zero advertising libraries
+- Privacy policy accessible in-app and at the privacy URL
+- PrivacyInfo.xcprivacy included with all required-reason API declarations
+- Source code is open source: https://github.com/mneves75/ai-health-sync-ios
+
+=== TECHNICAL NOTES ===
+
+- Built with Swift 6 strict concurrency, SwiftUI, HealthKit
+- Minimum deployment: iOS 26
+- All traffic: TLS 1.3 with certificate fingerprint pinning
+- Pairing codes expire after 5 minutes
+- Mac CLI install: brew tap mneves75/tap && brew install healthsync

@@ -1,4 +1,4 @@
-# Chapter Quizzes: iOS Health Sync Learning Guide
+# Chapter Quizzes: HealthSync Helper App Learning Guide
 
 **Test Your Understanding After Each Chapter**
 
@@ -82,7 +82,7 @@ D) To check your phone
 
 ## Chapter 1: What This App Does Quiz
 
-### 1. What is the main purpose of the iOS Health Sync app?
+### 1. What is the main purpose of the HealthSync Helper App?
 
 A) To store health data in the cloud
 B) To sync health data peer-to-peer between iPhone and Mac

@@ -1,4 +1,4 @@
-# Write Tests: Testing iOS Health Sync
+# Write Tests: Testing HealthSync Helper App
 
 **Create unit and integration tests for the iOS app and CLI**
 
@@ -15,7 +15,7 @@
 
 ## Goal
 
-Write comprehensive tests for iOS Health Sync using Swift Testing framework.
+Write comprehensive tests for HealthSync Helper App using Swift Testing framework.
 
 ---
 

@@ -1,6 +1,6 @@
 # Documentation Automation Scripts
 
-**Living documentation automation for the iOS Health Sync project**
+**Living documentation automation for the HealthSync Helper App project**
 
 ---
 
@@ -422,5 +422,5 @@ git commit -m "docs: update metrics report"
 
 ---
 
-**Automation Scripts Version:** 1.0.0
+**Automation Scripts Version:** 1.0.1
 **Last Updated:** 2025-01-07

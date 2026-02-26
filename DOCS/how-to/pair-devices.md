@@ -84,7 +84,7 @@ healthsync status
 🔒 Secure: Yes (mTLS)
 🔐 Fingerprint: SHA256:abc123def456...
 📊 Enabled: 27 data types
-📦 Version: 1.0.0
+📦 Version: 1.0.1
 ```
 
 **On iOS App:**

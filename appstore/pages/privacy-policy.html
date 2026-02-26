@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade — HealthSync Helper App</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1d1d1f;
+            --muted: #6e6e73;
+            --accent: #0071e3;
+            --border: #d2d2d7;
+            --card: #f5f5f7;
+            --green: #34c759;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --text: #f5f5f7;
+                --muted: #a1a1a6;
+                --accent: #2997ff;
+                --border: #38383a;
+                --card: #1c1c1e;
+                --green: #30d158;
+            }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 48px 20px 96px;
+        }
+        header { margin-bottom: 48px; }
+        h1 {
+            font-size: 2.125rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            line-height: 1.15;
+            margin-bottom: 6px;
+        }
+        .meta {
+            color: var(--muted);
+            font-size: 0.875rem;
+        }
+        .summary {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin: 32px 0;
+            border-left: 3px solid var(--green);
+        }
+        .summary p { font-size: 0.95rem; line-height: 1.6; }
+        h2 {
+            font-size: 1.175rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 14px;
+            letter-spacing: -0.01em;
+        }
+        p { font-size: 0.9375rem; margin-bottom: 14px; }
+        ul { padding-left: 20px; margin-bottom: 16px; }
+        li { font-size: 0.9375rem; margin-bottom: 8px; }
+        .zero-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+        }
+        .zero-list li {
+            font-size: 0.9375rem;
+            padding-left: 20px;
+            position: relative;
+        }
+        .zero-list li::before {
+            content: "\2715";
+            color: var(--green);
+            font-weight: 600;
+            position: absolute;
+            left: 0;
+            font-size: 0.8rem;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .legal {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin: 32px 0;
+        }
+        .legal h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .legal p { font-size: 0.875rem; margin-bottom: 10px; }
+        .legal p:last-child { margin-bottom: 0; }
+        .contact-box {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-top: 32px;
+        }
+        .contact-box p { margin-bottom: 6px; font-size: 0.9375rem; }
+        .contact-box p:last-child { margin-bottom: 0; }
+        footer {
+            margin-top: 56px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.8125rem;
+        }
+        @media (max-width: 480px) {
+            .zero-list { grid-template-columns: 1fr; }
+            h1 { font-size: 1.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Política de Privacidade</h1>
+            <p class="meta">HealthSync Helper App &mdash; Vigência: 19 de fevereiro de 2026</p>
+        </header>
+
+        <div class="summary">
+            <p><strong>Resumo:</strong> O HealthSync Helper App não coleta, armazena nem transmite nenhum dado seu para servidores externos. Dados de saúde trafegam exclusivamente entre o seu iPhone e o seu Mac pela rede WiFi local.</p>
+        </div>
+
+        <h2>Dados que acessamos</h2>
+        <ul>
+            <li>Dados de saúde que você autoriza explicitamente pelas permissões do HealthKit no iOS (ex: passos, frequência cardíaca, sono, treinos).</li>
+            <li>Configurações de rede local necessárias para pareamento e compartilhamento entre dispositivos.</li>
+        </ul>
+
+        <h2>Como usamos os dados</h2>
+        <ul>
+            <li>Dados do HealthKit são usados exclusivamente para transferi-los ao Mac pareado pela rede local.</li>
+            <li>Não usamos dados de saúde para publicidade, marketing, rastreamento ou mineração de dados.</li>
+            <li>Não construímos perfis de usuário nem fazemos análise comportamental.</li>
+            <li>Dados de saúde não são armazenados no iCloud.</li>
+        </ul>
+
+        <h2>Compartilhamento de dados</h2>
+        <ul>
+            <li>Dados de saúde são compartilhados apenas com o Mac que você pareia usando QR code temporário e pinning de certificado TLS.</li>
+            <li>Não enviamos dados de saúde para nenhum servidor externo, serviço em nuvem ou terceiros.</li>
+            <li>Nenhum dado sai da sua rede local em nenhuma circunstância.</li>
+        </ul>
+
+        <h2>Serviços de terceiros</h2>
+        <p>O HealthSync Helper App não contém:</p>
+        <ul class="zero-list">
+            <li>SDKs de terceiros</li>
+            <li>Frameworks de analytics</li>
+            <li>Bibliotecas de propaganda</li>
+            <li>Serviços de crash report</li>
+            <li>Rastreadores de uso</li>
+            <li>Código de terceiros</li>
+        </ul>
+        <p>O app é totalmente independente. O código-fonte é aberto sob licença Apache 2.0 e está disponível para auditoria no <a href="https://github.com/mneves75/ai-health-sync-ios">GitHub</a>.</p>
+
+        <h2>Logs e auditoria</h2>
+        <ul>
+            <li>O app armazena registros locais de auditoria (eventos de pareamento, requisições de acesso, verificações de status).</li>
+            <li>Registros de auditoria contêm metadados mínimos e identificadores hasheados — não incluem valores brutos de saúde.</li>
+            <li>Registros de auditoria são armazenados apenas no seu dispositivo e nunca são transmitidos externamente.</li>
+        </ul>
+
+        <h2>Retenção de dados</h2>
+        <ul>
+            <li>Registros de pareamento e logs de auditoria são armazenados localmente no seu dispositivo.</li>
+            <li>Você pode revogar todos os pareamentos a qualquer momento pelo app.</li>
+            <li>Desinstalar o app remove todos os dados armazenados localmente.</li>
+        </ul>
+
+        <h2>Segurança</h2>
+        <ul>
+            <li>Todos os dados em trânsito são criptografados com TLS 1.3.</li>
+            <li>Pinning de impressão digital do certificado previne ataques man-in-the-middle.</li>
+            <li>Pareamento usa códigos temporários e autorização baseada em token.</li>
+            <li>Todos os segredos são armazenados no Keychain do iOS.</li>
+            <li>Limitação de taxa protege contra tentativas de acesso não autorizado.</li>
+        </ul>
+
+        <h2>Suas escolhas</h2>
+        <ul>
+            <li>Você pode conceder ou revogar acesso ao HealthKit a qualquer momento em Ajustes do iOS > Saúde > Acesso a Dados e Dispositivos.</li>
+            <li>Você pode parar o compartilhamento a qualquer momento tocando em "Parar Compartilhamento" no app.</li>
+            <li>Você pode revogar pareamentos de dispositivos nas configurações do app.</li>
+        </ul>
+
+        <h2>Privacidade de crianças</h2>
+        <p>O HealthSync Helper App não coleta intencionalmente dados de crianças menores de 13 anos. O app não coleta nenhum dado pessoal de nenhum usuário. Se você acredita que uma criança forneceu informações pessoais, entre em contato conosco.</p>
+
+        <div class="legal">
+            <h3>Controlador de dados</h3>
+            <p>O controlador dos dados pessoais processados pelo HealthSync Helper App é: Marcus Neves — <a href="mailto:contato@mvneves.dev">contato@mvneves.dev</a>. Como todos os dados permanecem exclusivamente nos seus dispositivos, o controlador não tem acesso a nenhum dado pessoal do usuário.</p>
+
+            <h3>LGPD (Brasil) — Lei 13.709/2018, Art. 11</h3>
+            <p>Dados de saúde são classificados como dados pessoais sensíveis conforme o Art. 11 da LGPD. O tratamento ocorre com base no consentimento explícito do titular, obtido pelas permissões do HealthKit no iOS, revogável a qualquer momento em Ajustes > Saúde. Como o app não transmite dados para nenhum servidor, não há tratamento de dados pessoais por parte do desenvolvedor. Todos os dados permanecem exclusivamente nos seus dispositivos.</p>
+            <p>Seus direitos conforme a LGPD (Art. 18): acesso, correção, anonimização, portabilidade, eliminação, informação sobre compartilhamento, revogação do consentimento, oposição e revisão de decisões automatizadas. Para exercer qualquer direito, entre em contato pelo email acima. Prazo de resposta: 15 dias úteis.</p>
+
+            <h3>GDPR (União Europeia) — Art. 9</h3>
+            <p>Dados de saúde são categorizados como dados pessoais de categoria especial conforme o Art. 9 do GDPR. A base legal é o consentimento explícito do titular conforme Art. 9(2)(a), obtido pelas permissões do HealthKit no iOS. Nenhum dado pessoal é processado do lado do servidor. O consentimento pode ser revogado a qualquer momento em Ajustes > Saúde.</p>
+            <p>Seus direitos conforme o GDPR (Art. 15-22): acesso, retificação, apagamento, restrição de processamento, portabilidade, objeção e revisão de decisões automatizadas. Para exercer qualquer direito, entre em contato pelo email acima. Prazo de resposta: 30 dias.</p>
+
+            <h3>CCPA (Califórnia)</h3>
+            <p>Nenhuma informação pessoal é vendida, compartilhada ou coletada para fins comerciais. O app não coleta informações pessoais conforme definido pela CCPA. Nenhum dado é usado para publicidade comportamental entre contextos.</p>
+        </div>
+
+        <h2>Alterações nesta política</h2>
+        <p>Se atualizarmos esta política, a nova versão será publicada nesta URL e a data de vigência será atualizada. O uso continuado do app após alterações constitui aceitação da política atualizada.</p>
+
+        <h2>Contato</h2>
+        <div class="contact-box">
+            <p><strong>Marcus Neves</strong></p>
+            <p><a href="mailto:contato@mvneves.dev">contato@mvneves.dev</a></p>
+            <p><a href="https://github.com/mneves75/ai-health-sync-ios/issues">GitHub Issues</a></p>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Marcus Neves. HealthSync Helper App é código aberto sob licença Apache 2.0.</p>
+        </footer>
+    </div>
+</body>
+</html>

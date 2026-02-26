@@ -2,7 +2,7 @@
 
 **Understanding why things work the way they do**
 
-This section provides conceptual guides that explain the reasoning behind iOS Health Sync's design decisions. Unlike how-to guides (which show steps) or reference docs (which list specifications), explanations help you understand the "why."
+This section provides conceptual guides that explain the reasoning behind HealthSync Helper App's design decisions. Unlike how-to guides (which show steps) or reference docs (which list specifications), explanations help you understand the "why."
 
 ---
 

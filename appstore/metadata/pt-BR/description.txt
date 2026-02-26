@@ -1,0 +1,45 @@
+Seus dados de saúde pertencem a você — não a um servidor na nuvem.
+
+O HealthSync Helper App transfere dados do Apple Saúde diretamente do iPhone para o Mac pela sua rede WiFi local. Sem nuvem. Sem conta. Sem rastreamento. Sem assinatura.
+
+COMO FUNCIONA
+
+1. Abra o app e toque em Iniciar Compartilhamento
+2. Escaneie o QR code com o CLI no Mac
+3. Exporte seus dados em CSV ou JSON
+
+Três passos. Seus dados nunca saem da sua rede.
+
+O QUE VOCÊ PODE EXPORTAR
+
+31 tipos de dados de saúde em 5 categorias:
+
+Atividade — Passos, distância caminhada + corrida, distância ciclismo, energia ativa, energia basal, tempo de exercício, horas em pé, lances de escada, treinos
+Coração — Frequência cardíaca, FC em repouso, FC média caminhando, VFC, pressão arterial (sistólica/diastólica), oxigênio no sangue, taxa respiratória, temperatura corporal, VO2 máx
+Sono — Análise do sono, tempo na cama, tempo dormindo, tempo acordado, sono REM, sono leve, sono profundo
+Corpo — Peso, altura, IMC, percentual de gordura corporal, massa magra
+
+SEGURANÇA QUE VOCÊ PODE VERIFICAR
+
+Toda transferência usa criptografia TLS 1.3 com pinning de certificado. O pareamento acontece por QR code temporário — sem senhas, sem contas. Todos os segredos ficam no Keychain do iOS. Um log de auditoria completo registra cada acesso. Limitação de taxa protege contra abusos.
+
+O código-fonte é aberto sob licença Apache 2.0. Você pode ler cada linha no GitHub.
+
+PRIVACIDADE TOTAL
+
+Zero analytics. Zero SDKs de terceiros. Zero bibliotecas de propaganda. Zero crash reporters. Zero armazenamento em nuvem. Zero coleta de dados.
+
+Seus dados de saúde vão do seu iPhone para o seu Mac e para mais lugar nenhum.
+
+CLI macOS
+
+Instale o CLI healthsync via Homebrew para receber dados no seu Mac:
+brew tap mneves75/tap && brew install healthsync
+
+Descubra dispositivos, pareie via QR code, busque dados, verifique status — tudo pelo Terminal. Exporte em CSV para planilhas ou JSON para automação.
+
+CÓDIGO ABERTO
+
+Licença Apache 2.0. Sem dependências ocultas. Totalmente auditável. Construído com Swift 6 e SwiftUI.
+
+Funciona com o Apple Saúde.

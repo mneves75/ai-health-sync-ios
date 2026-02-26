@@ -1,8 +1,8 @@
-# Contributing to iOS Health Sync
+# Contributing to HealthSync Helper App
 
 **Thank you for considering contributing!** 🎉
 
-We welcome contributions from everyone. This document provides guidelines for contributing to the iOS Health Sync project.
+We welcome contributions from everyone. This document provides guidelines for contributing to the HealthSync Helper App project.
 
 ---
 
@@ -101,13 +101,13 @@ Look for issues labeled:
 **1. Fork and Clone:**
 ```bash
 # Fork the repository on GitHub
-git clone https://github.com/YOUR_USERNAME/ai-health-sync-ios-clawdbot.git
-cd ai-health-sync-ios-clawdbot
+git clone https://github.com/YOUR_USERNAME/ai-health-sync-ios.git
+cd ai-health-sync-ios
 ```
 
 **2. Add Upstream Remote:**
 ```bash
-git remote add upstream https://github.com/original-org/ai-health-sync-ios-clawdbot.git
+git remote add upstream https://github.com/mneves75/ai-health-sync-ios.git
 ```
 
 **3. Open Xcode:**
@@ -144,8 +144,8 @@ swift test
 
 ```bash
 # From main branch
-git checkout main
-git pull upstream main
+git checkout master
+git pull upstream master
 
 # Create feature branch
 git checkout -b feature/your-feature-name
@@ -226,7 +226,7 @@ Fixes #123
 
 ```bash
 git fetch upstream
-git rebase upstream/main
+git rebase upstream/master
 ```
 
 ### 6. Push to Your Fork
@@ -612,7 +612,7 @@ To publish the Agent Skill to ClawdHub:
 
 ```bash
 # Package the skill
-./scripts/package-clawdhub.sh 1.0.0
+./scripts/package-clawdhub.sh 1.0.1
 
 # Options:
 ./scripts/package-clawdhub.sh --help      # Show usage
@@ -643,9 +643,9 @@ See `skills/healthkit-sync/HOWTO_CLAWDHUB.md` for detailed instructions.
 
 **Thank you for contributing!** 🙏
 
-Your contributions make iOS Health Sync better for everyone.
+Your contributions make HealthSync Helper App better for everyone.
 
 ---
 
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-02-26
 **Contributing Guide Version:** 1.0.0

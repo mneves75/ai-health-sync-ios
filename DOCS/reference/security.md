@@ -1,342 +1,133 @@
 # Security Reference
-**Technical specifications for iOS Health Sync security implementation**
+**Technical reference for the current security model used by HealthSync Helper App**
 
 ---
 
-## Overview
+## Security Posture
 
-iOS Health Sync implements a zero-trust security model with mutual TLS (mTLS) authentication. No data leaves your local network; all communication is peer-to-peer between your iPhone and Mac.
+The project uses a local-first security model with layered controls:
 
----
+- TLS 1.3 for transport confidentiality and integrity
+- Certificate fingerprint pinning in the macOS CLI (MITM resistance)
+- Pairing-code exchange to bootstrap trust
+- Bearer token authorization for protected API routes
+- Audit logging with sensitive-data redaction rules
 
-## Security Architecture
-
-```
-┌─────────────────┐         mTLS (TLS 1.3)        ┌─────────────────┐
-│   macOS CLI     │◄────────────────────────────►│   iOS App       │
-│                 │                               │                 │
-│ • Client Cert   │         Local Network         │ • Server Cert   │
-│ • CA Cert       │         (No Internet)         │ • CA Cert       │
-│ • Private Key   │                               │ • Private Key   │
-└─────────────────┘                               └─────────────────┘
-        │                                                 │
-        ▼                                                 ▼
-   ┌─────────┐                                      ┌─────────┐
-   │Keychain │                                      │Keychain │
-   │Services │                                      │Services │
-   └─────────┘                                      └─────────┘
-```
+No cloud service is required for data exchange.
 
 ---
 
-## Certificate Specifications
+## Trust Boundaries
 
-### Certificate Authority (CA)
-
-| Property | Value |
-|----------|-------|
-| Algorithm | ECDSA P-256 |
-| Signature | SHA-256 |
-| Validity | 5 years |
-| Key Usage | Certificate Sign, CRL Sign |
-| Basic Constraints | CA:TRUE |
-
-### Server Certificate (iOS App)
-
-| Property | Value |
-|----------|-------|
-| Algorithm | ECDSA P-256 |
-| Signature | SHA-256 |
-| Validity | 1 year |
-| Key Usage | Digital Signature, Key Encipherment |
-| Extended Key Usage | TLS Web Server Authentication |
-| Subject Alternative Name | IP Address (dynamic) |
-
-### Client Certificate (macOS CLI)
-
-| Property | Value |
-|----------|-------|
-| Algorithm | ECDSA P-256 |
-| Signature | SHA-256 |
-| Validity | 1 year |
-| Key Usage | Digital Signature |
-| Extended Key Usage | TLS Web Client Authentication |
-| Subject | CN=healthsync-client |
+1. **iOS app boundary**
+   - Owns HealthKit access and embedded HTTPS server.
+2. **macOS CLI boundary**
+   - Connects over LAN and validates pinned server fingerprint.
+3. **Local network boundary**
+   - Untrusted by default; protected by TLS + pinning + token auth.
 
 ---
 
-## TLS Configuration
+## Transport Security
 
-### Protocol
-- **Minimum Version:** TLS 1.3
-- **Maximum Version:** TLS 1.3
+### TLS Configuration
 
-### Cipher Suites (in order of preference)
-1. `TLS_AES_256_GCM_SHA384`
-2. `TLS_CHACHA20_POLY1305_SHA256`
-3. `TLS_AES_128_GCM_SHA256`
+- Minimum protocol: **TLS 1.3**
+- Server identity generated and loaded by `CertificateService`
+- iOS server listens via `NWListener` with TLS options
 
-### Key Exchange
-- ECDHE with P-256 curve
-- Perfect Forward Secrecy (PFS) enabled
+### Fingerprint Pinning (CLI)
 
----
+The CLI computes SHA-256 fingerprint from the presented server certificate and compares it to the fingerprint captured during pairing.
 
-## Key Storage
-
-### macOS (CLI)
-
-| Item | Storage Location |
-|------|------------------|
-| Client Private Key | Keychain Services (login keychain) |
-| Client Certificate | Keychain Services (login keychain) |
-| CA Certificate | Keychain Services (login keychain) |
-| Server Address | `~/.config/healthsync/config.json` |
-
-**Keychain Access:**
-```bash
-# View stored items
-security find-certificate -a -c "healthsync"
-
-# Access requires user authentication
-security set-key-partition-list -S apple-tool:,apple: -k "" ~/Library/Keychains/login.keychain-db
-```
-
-### iOS (App)
-
-| Item | Storage Location |
-|------|------------------|
-| Server Private Key | Keychain Services (kSecAttrAccessibleWhenUnlocked) |
-| Server Certificate | Keychain Services |
-| CA Certificate | Keychain Services |
-| Client Certificates | Keychain Services (trusted clients) |
-
-**Keychain Attributes:**
-- `kSecAttrAccessible`: `kSecAttrAccessibleWhenUnlocked`
-- `kSecAttrSynchronizable`: `false` (not synced to iCloud)
-- `kSecAttrAccessControl`: Requires device unlock
+If mismatch occurs, the connection is rejected.
 
 ---
 
-## Certificate Generation
+## Authentication and Authorization
 
-Certificates are generated during the pairing process:
+### Pairing Bootstrap
 
-```swift
-// iOS: Generate key pair
-let privateKey = P256.KeyAgreement.PrivateKey()
-let publicKey = privateKey.publicKey
+`POST /api/v1/pair` accepts a short-lived code from QR payload and returns a token.
 
-// Create self-signed CA (first pairing only)
-let ca = Certificate.create(
-    subject: "healthsync-ca",
-    issuer: "healthsync-ca",
-    publicKey: caPublicKey,
-    privateKey: caPrivateKey,
-    isCA: true,
-    validity: .years(5)
-)
+Pairing protections:
 
-// Create server certificate
-let serverCert = Certificate.create(
-    subject: "healthsync-server",
-    issuer: "healthsync-ca",
-    publicKey: serverPublicKey,
-    privateKey: caPrivateKey,
-    isCA: false,
-    validity: .years(1),
-    san: [.ipAddress(localIP)]
-)
+- Pairing code TTL: **5 minutes**
+- Max failed attempts: **5** per pending session
+- Constant-time code comparison to reduce timing side channels
 
-// Create client certificate
-let clientCert = Certificate.create(
-    subject: "healthsync-client",
-    issuer: "healthsync-ca",
-    publicKey: clientPublicKey,
-    privateKey: caPrivateKey,
-    isCA: false,
-    validity: .years(1)
-)
-```
+### API Authorization
+
+Protected routes require:
+
+- `Authorization: Bearer <token>`
+
+Token behavior:
+
+- Token is hashed before persistence
+- Token expiry is enforced server-side
+- `lastSeenAt` is updated on valid use
+
+Header parsing is case-insensitive for field names.
 
 ---
 
-## QR Code Contents
+## Request Hardening
 
-The QR code contains a JSON payload with:
+`NetworkServer` enforces:
 
-```json
-{
-  "version": 1,
-  "server": {
-    "host": "192.168.1.100",
-    "port": 8443
-  },
-  "certificates": {
-    "ca": "-----BEGIN CERTIFICATE-----\n...",
-    "client": "-----BEGIN CERTIFICATE-----\n...",
-    "client_key": "-----BEGIN PRIVATE KEY-----\n..."
-  },
-  "fingerprint": "sha256:AB12CD34..."
-}
-```
-
-**Security measures:**
-- QR code is displayed only on-device
-- Contains one-time use client certificate
-- Certificate is bound to specific CA
-- Fingerprint allows verification
+- Rate limit: **60 req/min** per token
+- Header size cap: **16 KB**
+- Body size cap: **1 MB**
+- Request duration timeout: **10 s**
+- Explicit status handling for `400`, `401`, `403`, `404`, `408`, `413`, `423`, `429`
 
 ---
 
-## Network Security
+## Secret and Key Material Storage
 
-### SSRF Protection
+### iOS
 
-The server rejects requests that could cause SSRF:
-- Only accepts connections from local network (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-- Blocks requests to localhost/127.0.0.1
-- No HTTP redirects followed
-- No external URL fetching
+- TLS key/certificate stored in Keychain
+- Private key accessibility: `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`
+- Secure Enclave preferred when available (fallback to software key)
 
-### Request Validation
+### macOS CLI
 
-```swift
-// Validate request origin
-guard request.remoteAddress.isPrivate else {
-    throw SecurityError.invalidOrigin
-}
-
-// Validate content type
-guard request.contentType == .json else {
-    throw SecurityError.invalidContentType
-}
-
-// Validate request size
-guard request.bodySize <= maxRequestSize else {
-    throw SecurityError.requestTooLarge
-}
-```
-
-### Rate Limiting
-
-| Limit | Value | Scope |
-|-------|-------|-------|
-| Requests/minute | 60 | Per client certificate |
-| Concurrent connections | 5 | Per client certificate |
-| Failed auth attempts | 5 | Per IP, then 5-min block |
+- Access token stored in Keychain (`healthsync-cli` service)
+- Server config/fingerprint stored in local config file
 
 ---
 
-## Data Protection
+## Logging and Audit
 
-### In Transit
-- All data encrypted with TLS 1.3
-- Perfect Forward Secrecy ensures past sessions can't be decrypted
-- Certificate pinning prevents MITM attacks
+### Audit Events
 
-### At Rest
-- Health data is NOT stored on the server (iOS app)
-- Health data is queried from HealthKit on-demand
-- CLI can optionally save to local files (user's choice)
-- No cloud storage, no analytics, no telemetry
+`AuditService` records structured events (for example `auth.pair`, `security.unauthorized_access`, `data.read`, `api.request`).
 
-### Memory
-- Private keys cleared from memory after use
-- Health data cleared after response sent
-- No logging of health data values
+Retention policy:
+
+- 90-day retention with periodic purge
+
+### Sensitive Data Handling
+
+- Pairing QR secret code is **not** logged
+- Health sample payload values are not logged to audit stream
+- Pairing client name is anonymized before persistence (`Client-XXXXXXXX`)
 
 ---
 
-## Threat Model
+## Latest Hardening (Unreleased)
 
-### Protected Against
-
-| Threat | Mitigation |
-|--------|------------|
-| Eavesdropping | TLS 1.3 encryption |
-| Man-in-the-middle | mTLS certificate validation |
-| Replay attacks | TLS session tickets, nonces |
-| Certificate theft | Keychain protection, device-bound |
-| Unauthorized access | Client certificate required |
-| Data exfiltration | Local network only, no cloud |
-
-### Not Protected Against
-
-| Threat | Reason |
-|--------|--------|
-| Physical device access | Out of scope - device security |
-| Compromised device | Assumes device integrity |
-| Local network attacks | Assumes trusted network |
-| Keychain extraction | Requires device compromise |
+- Authorization header compatibility fixed (`Authorization` / `authorization`)
+- Concurrent server startup race removed via coordinated `start()` gate
+- Pairing QR code secret removed from app logs
+- Regression tests added for both auth-header and concurrent-start scenarios
 
 ---
 
-## Audit Logging
+## Operational Recommendations
 
-Security events are logged (without sensitive data):
-
-```swift
-AuditService.log(
-    event: .certificateValidation,
-    outcome: .success,
-    clientFingerprint: cert.sha256Fingerprint,
-    remoteAddress: request.remoteAddress.redacted
-)
-```
-
-**Logged Events:**
-- Certificate validation (success/failure)
-- Connection attempts
-- Authentication failures
-- Rate limit triggers
-- Permission checks
-
-**Not Logged:**
-- Health data values
-- Full IP addresses (last octet redacted)
-- Private keys or certificates
-
----
-
-## Compliance
-
-### Apple Requirements
-- Privacy manifest (`PrivacyInfo.xcprivacy`) included
-- No tracking or fingerprinting
-- HealthKit data usage declared
-- Local network usage declared
-
-### Data Handling
-- No data leaves user's devices
-- No third-party services
-- No analytics or telemetry
-- User controls all data exports
-
----
-
-## Security Checklist
-
-For developers extending this project:
-
-- [ ] Never log health data values
-- [ ] Never store health data persistently (server-side)
-- [ ] Always validate certificates in full chain
-- [ ] Always use TLS 1.3 minimum
-- [ ] Always store keys in Keychain
-- [ ] Never hardcode credentials
-- [ ] Never disable certificate validation
-- [ ] Always rate-limit authentication attempts
-
----
-
-## Related Documentation
-
-- **[Security Model](../explanation/security-model.md)** - Conceptual overview
-- **[Generate Certificates](../how-to/generate-certificates.md)** - Manual certificate management
-- **[Fix Auth Errors](../how-to/fix-auth-errors.md)** - Troubleshooting
-- **[Architecture](./architecture.md)** - System overview
-
----
-
-*Last updated: 2026-01-07*
+- Prefer CLI workflows over raw curl for certificate pinning and safer defaults
+- Rotate pairings (`revokeAll`) when device ownership changes
+- Keep app and CLI updated together to avoid protocol drift

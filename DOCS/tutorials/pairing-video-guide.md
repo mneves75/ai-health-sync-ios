@@ -6,7 +6,7 @@
 **Time:** 5 minutes
 **Difficulty:** Beginner
 **Prerequisites:**
-- [ ] iOS Health Sync app installed on iPhone
+- [ ] HealthSync Helper App installed on iPhone
 - [ ] macOS CLI (`healthsync`) installed on Mac
 - [ ] Both devices on the same WiFi network
 
@@ -30,7 +30,7 @@ Open **HealthSync** on your iPhone. You'll see the main screen with:
 
 | Section | Initial State |
 |---------|---------------|
-| **Status** | Version 1.0.0, Protected Data status |
+| **Status** | Version 1.0.1, Protected Data status |
 | **HealthKit** | Not Requested |
 | **Sharing Server** | Stopped |
 | **Pairing** | No QR Code |
@@ -40,7 +40,7 @@ Open **HealthSync** on your iPhone. You'll see the main screen with:
 │           HealthSync                │
 │                                     │
 │  Status                             │
-│  ├── Version: 1.0.0 (1)            │
+│  ├── Version: 1.0.1 (1)            │
 │  ├── Protected Data: Available     │
 │  └── HealthKit: Not Requested      │
 │                                     │

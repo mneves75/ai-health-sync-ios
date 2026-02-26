@@ -28,7 +28,7 @@ Create a zip file excluding unnecessary files:
 cd skills/healthkit-sync
 
 # Create clean zip (exclude this howto file)
-zip -r healthkit-sync-1.0.0.zip . \
+zip -r healthkit-sync-1.0.1.zip . \
   -x "HOWTO_CLAWDHUB.md" \
   -x "*.DS_Store" \
   -x "__MACOSX/*"
@@ -36,7 +36,7 @@ zip -r healthkit-sync-1.0.0.zip . \
 
 Or manually select files:
 ```bash
-zip -r healthkit-sync-1.0.0.zip \
+zip -r healthkit-sync-1.0.1.zip \
   SKILL.md \
   TESTING.md \
   references/
@@ -50,7 +50,7 @@ Navigate to: **https://clawdhub.com/publish**
 |-------|-------|-------|
 | **Slug** | `healthkit-sync` | Lowercase, hyphens only. Must be unique on ClawdHub. |
 | **Display name** | `HealthKit Sync` | Human-readable name shown in listings. |
-| **Version** | `1.0.0` | Valid semver (MAJOR.MINOR.PATCH). |
+| **Version** | `1.0.1` | Valid semver (MAJOR.MINOR.PATCH). |
 | **Tags** | `latest, healthkit, ios, macos, health` | Comma-separated. Include `latest` for default version. |
 | **Changelog** | See below | Optional but recommended. |
 
@@ -76,7 +76,7 @@ Compatible with:
 ## Step 3: Upload Files
 
 1. Click the upload area or drag-and-drop
-2. Select `healthkit-sync-1.0.0.zip` OR the entire `healthkit-sync/` folder
+2. Select `healthkit-sync-1.0.1.zip` OR the entire `healthkit-sync/` folder
 3. Archives auto-extract on upload
 4. Verify "SKILL.md required" check turns green
 
@@ -104,7 +104,7 @@ https://clawdhub.com/skills/healthkit-sync
 
 To publish a new version:
 
-1. Increment version (e.g., `1.0.0` → `1.0.1` or `1.1.0`)
+1. Increment version (e.g., `1.0.1` → `1.0.2` or `1.1.0`)
 2. Update changelog with new changes
 3. Upload new package
 4. Update `latest` tag if this should be the default
@@ -113,9 +113,9 @@ To publish a new version:
 
 | Change Type | Version Bump | Example |
 |-------------|--------------|---------|
-| Bug fixes, typos | PATCH | 1.0.0 → 1.0.1 |
-| New features, docs | MINOR | 1.0.0 → 1.1.0 |
-| Breaking changes | MAJOR | 1.0.0 → 2.0.0 |
+| Bug fixes, typos | PATCH | 1.0.1 → 1.0.2 |
+| New features, docs | MINOR | 1.0.1 → 1.1.0 |
+| Breaking changes | MAJOR | 1.0.1 → 2.0.0 |
 
 ## Installing from ClawdHub
 
@@ -131,8 +131,8 @@ curl -sL https://clawdhub.com/skills/healthkit-sync/latest.zip | unzip -d ~/.cla
 ### Manual Installation
 ```bash
 # Download and extract
-wget https://clawdhub.com/skills/healthkit-sync/1.0.0.zip
-unzip 1.0.0.zip -d ~/.claude/skills/healthkit-sync/
+wget https://clawdhub.com/skills/healthkit-sync/1.0.1.zip
+unzip 1.0.1.zip -d ~/.claude/skills/healthkit-sync/
 ```
 
 ## Troubleshooting
@@ -148,7 +148,7 @@ unzip 1.0.0.zip -d ~/.claude/skills/healthkit-sync/
 
 ### Upload fails
 - Check file size < 50 MB
-- Ensure zip is not corrupted: `unzip -t healthkit-sync-1.0.0.zip`
+- Ensure zip is not corrupted: `unzip -t healthkit-sync-1.0.1.zip`
 - Try uploading folder directly instead of zip
 
 ## Quick Reference
@@ -156,13 +156,13 @@ unzip 1.0.0.zip -d ~/.claude/skills/healthkit-sync/
 ```bash
 # Package the skill
 cd skills/healthkit-sync
-zip -r healthkit-sync-1.0.0.zip SKILL.md TESTING.md references/
+zip -r healthkit-sync-1.0.1.zip SKILL.md TESTING.md references/
 
 # Verify contents
-unzip -l healthkit-sync-1.0.0.zip
+unzip -l healthkit-sync-1.0.1.zip
 
 # Check size
-du -sh healthkit-sync-1.0.0.zip
+du -sh healthkit-sync-1.0.1.zip
 ```
 
 ## Links

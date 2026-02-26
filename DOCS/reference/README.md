@@ -98,5 +98,5 @@ healthsync version       # Show version info
 
 ---
 
-**Reference Index Version:** 1.0.0
+**Reference Index Version:** 1.0.1
 **Last Updated:** 2026-01-07

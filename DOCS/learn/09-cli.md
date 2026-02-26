@@ -143,10 +143,10 @@ struct HealthSyncCLI: AsyncParsableCommand {
         commandName: "healthsync",
         abstract: "Fetch health data from iOS devices",
         discussion: """
-        HealthSync CLI connects to your iOS Health Sync app
+        HealthSync CLI connects to your HealthSync Helper App
         and exports your health data to CSV or JSON format.
         """,
-        version: "1.0.0"
+        version: "1.0.1"
     )
 
     @Option(name: .short, help: "Output format (csv or json)")

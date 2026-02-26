@@ -1,0 +1,12 @@
+Bem-vindo ao HealthSync Helper App!
+
+Exporte seus dados do Apple Saúde para o Mac de forma segura via WiFi local — sem nuvem, sem conta.
+
+O que está incluído:
+- 31 tipos de dados de saúde em 5 categorias
+- Pareamento por QR code — sem senhas
+- Criptografia TLS 1.3 em toda transferência
+- Exportação em CSV e JSON
+- CLI macOS complementar via Homebrew
+- Log de auditoria completo de todos os acessos
+- Código aberto sob licença Apache 2.0

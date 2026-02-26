@@ -47,7 +47,7 @@ actor HealthKitService {
     /// Returns true if authorization has already been requested (user saw the dialog).
     /// NOTE: This does NOT tell us if the user granted or denied - that's private by design.
     func hasRequestedAuthorization(for types: [HealthDataType]) async -> Bool {
-        let readTypes = Set(await MainActor.run { types.compactMap { $0.sampleType as? HKObjectType } })
+        let readTypes = Set(await MainActor.run { types.compactMap { type in if let st = type.sampleType { return st as HKObjectType } else { return nil } } })
         guard !readTypes.isEmpty else { return false }
 
         return await withCheckedContinuation { continuation in
@@ -147,3 +147,4 @@ private extension Sequence {
         return results
     }
 }
+

@@ -14,7 +14,7 @@
 
 ## Goal
 
-Diagnose and fix common build errors when compiling the iOS Health Sync app.
+Diagnose and fix common build errors when compiling the HealthSync Helper App.
 
 ---
 

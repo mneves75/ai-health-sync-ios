@@ -1,5 +1,5 @@
-# Security Model: Understanding iOS Health Sync's Zero-Trust Architecture
-**A conceptual guide to how iOS Health Sync protects your health data**
+# Security Model: Understanding HealthSync Helper App's Zero-Trust Architecture
+**A conceptual guide to how HealthSync Helper App protects your health data**
 
 ---
 
@@ -13,7 +13,7 @@ Most health sync solutions require:
 - Trusting third-party servers
 - Accepting privacy policies
 
-iOS Health Sync takes a different approach: **your data never leaves your local network**.
+HealthSync Helper App takes a different approach: **your data never leaves your local network**.
 
 ---
 
@@ -273,7 +273,7 @@ If an attacker controls your router, they could potentially block or delay conne
 
 ## Privacy by Design
 
-iOS Health Sync follows privacy-by-design principles:
+HealthSync Helper App follows privacy-by-design principles:
 
 | Principle | Implementation |
 |-----------|----------------|
@@ -287,7 +287,7 @@ iOS Health Sync follows privacy-by-design principles:
 
 ## Comparison with Alternatives
 
-| Feature | iOS Health Sync | Cloud Sync Services |
+| Feature | HealthSync Helper App | Cloud Sync Services |
 |---------|-----------------|---------------------|
 | Data location | Your devices only | Third-party servers |
 | Internet required | No | Yes |

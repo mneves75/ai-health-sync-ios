@@ -1,6 +1,6 @@
 ---
 name: healthkit-sync
-description: iOS HealthKit data sync CLI commands and patterns. Use when working with healthsync CLI, fetching Apple Health data (steps, heart rate, sleep, workouts), pairing iOS devices over local network, or understanding the iOS Health Sync project architecture including mTLS certificate pinning, Keychain storage, and audit logging.
+description: iOS HealthKit data sync CLI commands and patterns. Use when working with healthsync CLI, fetching Apple Health data (steps, heart rate, sleep, workouts), pairing iOS devices over local network, or understanding the HealthSync Helper App project architecture including mTLS certificate pinning, Keychain storage, and audit logging.
 license: Apache-2.0
 compatibility: macOS with healthsync CLI installed (~/.healthsync/config.json)
 metadata:
@@ -19,7 +19,7 @@ Securely sync Apple HealthKit data from iPhone to Mac over local network using m
 - User mentions `healthsync` CLI commands
 - User wants to fetch steps, heart rate, sleep, or workout data
 - User needs to pair a Mac with an iOS device
-- User asks about the iOS Health Sync project architecture
+- User asks about the HealthSync Helper App project architecture
 - User mentions certificate pinning or mTLS patterns
 
 ## CLI Quick Reference
@@ -110,7 +110,7 @@ Tokens never stored in config file - always in Keychain with:
 ## Project Structure
 
 ```
-ai-health-sync-ios-clawdbot/
+ai-health-sync-ios/
 ├── iOS Health Sync App/          # Swift 6 iOS app
 │   ├── Services/Security/        # CertificateService, KeychainStore, PairingService
 │   ├── Services/HealthKit/       # HealthKitService, HealthSampleMapper

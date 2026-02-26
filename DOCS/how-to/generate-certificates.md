@@ -22,7 +22,7 @@ Understand how certificates are generated and exchanged during pairing, and how 
 
 ## Background
 
-iOS Health Sync uses **mutual TLS (mTLS)** for secure communication:
+HealthSync Helper App uses **mutual TLS (mTLS)** for secure communication:
 
 1. **iOS device** generates a self-signed certificate
 2. **Mac CLI** generates its own certificate
@@ -48,7 +48,7 @@ func generateSelfSignedCertificate() throws -> (certificate: SecCertificate, pri
     let certificateData = try createCertificate(
         publicKey: publicKey,
         privateKey: privateKey,
-        subject: "iOS Health Sync Device"
+        subject: "HealthSync Helper App Device"
     )
 
     // 3. Return certificate and private key
@@ -80,7 +80,7 @@ log stream --predicate 'subsystem == "org.mvneves.healthsync"' --level debug
 openssl x509 -in certificate.pem -text -noout
 
 # Output shows:
-# - Subject: CN=iOS Health Sync Device
+# - Subject: CN=HealthSync Helper App Device
 # - Validity: 365 days
 # - Public Key Algorithm: id-ecPublicKey
 # - Signature Algorithm: ecdsa-with-SHA256
@@ -91,7 +91,7 @@ openssl x509 -in certificate.pem -text -noout
 ### Step 3: View Certificate Fingerprint
 
 **On iOS app:**
-1. Open iOS Health Sync
+1. Open HealthSync Helper App
 2. Go to Settings (gear icon)
 3. View "Certificate Fingerprint"
 

@@ -1,6 +1,6 @@
 # Getting Started Checklist
 
-**Step-by-step guide to setting up iOS Health Sync**
+**Step-by-step guide to setting up HealthSync Helper App**
 
 ---
 
@@ -27,7 +27,7 @@ Before you begin, make sure you have:
 - [ ] Clone the repository:
   ```bash
   git clone https://github.com/mneves75/ai-health-sync-ios.git
-  cd ai-health-sync-ios-clawdbot
+  cd ai-health-sync-ios
   ```
 
 - [ ] Open the iOS project:
@@ -267,12 +267,12 @@ You've successfully completed setup when:
 
 ---
 
-**Checklist Version:** 1.0.0
+**Checklist Version:** 1.0.1
 **Last Updated:** 2026-01-07
 **Estimated Setup Time:** 15-20 minutes
 
 ---
 
-**🎉 Congratulations!** You're all set up with iOS Health Sync.
+**🎉 Congratulations!** You're all set up with HealthSync Helper App.
 
 Ready to explore? Start with [What This App Does](./learn/01-overview.md) or jump to [How-To Guides](./how-to/README.md).

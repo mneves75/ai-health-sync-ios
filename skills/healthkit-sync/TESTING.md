@@ -97,7 +97,7 @@ Send test messages that should trigger the skill. The skill activates when the a
 | 1 | "How do I sync health data from my iPhone to my Mac?" | CLI pairing flow (`healthsync discover`, `healthsync scan`) |
 | 2 | "What commands does healthsync support?" | Full CLI reference with all commands |
 | 3 | "How do I fetch my step count?" | `healthsync fetch` command with `--types steps` |
-| 4 | "Explain the security architecture of iOS Health Sync" | mTLS, certificate pinning, Keychain storage details |
+| 4 | "Explain the security architecture of HealthSync Helper App" | mTLS, certificate pinning, Keychain storage details |
 | 5 | "What's the project structure of ai-health-sync?" | Architecture overview with file paths |
 | 6 | "How does certificate pinning work in healthsync?" | TOFU model, SHA256 fingerprint validation |
 | 7 | "Troubleshoot: no devices found" | Troubleshooting steps (WiFi, mDNS, firewall) |

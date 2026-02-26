@@ -5,38 +5,9 @@ All notable changes to AI Health Sync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-02-26
 
-### Security
-
-- **GitHub Actions Hardening** - All actions pinned to SHA hashes per GitHub security guidelines
-- **Concurrency Control** - Prevent parallel release workflows
-- **Input Validation** - Environment variables used instead of inline expansion (injection prevention)
-
-### Infrastructure
-
-- **Automated Release Pipeline** - Tag-triggered builds for arm64 and x86_64 binaries
-- **Homebrew Tap** - `brew tap mneves75/tap && brew install healthsync`
-- **Source Archives** - Each release includes source.zip with SHA256 checksum
-- **ClawdHub Publishing** - `scripts/package-clawdhub.sh` for skill packaging
-
-### Documentation
-
-- **HOWTO_CLAWDHUB.md** - Step-by-step guide for publishing skills to ClawdHub
-- **Updated skills/README.md** - ClawdHub section with installation instructions
-
-## [1.0.0] - 2026-01-07
-
-First public release of AI Health Sync.
-
-### Agent Skills
-
-- **Agent Skills** - [agentskills.io](https://agentskills.io) compatible skill for AI agents
-  - `skills/healthkit-sync/SKILL.md` - Main skill with CLI reference and usage patterns
-  - `skills/healthkit-sync/references/CLI-REFERENCE.md` - Detailed CLI documentation
-  - `skills/healthkit-sync/references/SECURITY.md` - mTLS and certificate pinning patterns
-  - `skills/healthkit-sync/references/ARCHITECTURE.md` - Project structure documentation
-  - Compatible with ClawdBot, Claude Code, Cursor, Goose, and other Agent Skills tools
+First public release of HealthSync Helper App.
 
 ### iOS App
 
@@ -71,6 +42,15 @@ First public release of AI Health Sync.
 - **Keychain Storage** - Persistent authentication token storage
 - **Test Suite** - 39 comprehensive tests
 
+### Agent Skills
+
+- **Agent Skills** - [agentskills.io](https://agentskills.io) compatible skill for AI agents
+  - `skills/healthkit-sync/SKILL.md` - Main skill with CLI reference and usage patterns
+  - `skills/healthkit-sync/references/CLI-REFERENCE.md` - Detailed CLI documentation
+  - `skills/healthkit-sync/references/SECURITY.md` - mTLS and certificate pinning patterns
+  - `skills/healthkit-sync/references/ARCHITECTURE.md` - Project structure documentation
+  - Compatible with ClawdBot, Claude Code, Cursor, Goose, and other Agent Skills tools
+
 ### Security
 
 - **SSRF Protection** - Validates hosts are on local network only
@@ -82,3 +62,31 @@ First public release of AI Health Sync.
   - Private IPv4 ranges (10.x, 172.16-31.x, 192.168.x)
   - IPv6 link-local (fe80::)
   - mDNS/Bonjour (.local domains)
+- **GitHub Actions Hardening** - All actions pinned to SHA hashes per GitHub security guidelines
+- **Concurrency Control** - Prevent parallel release workflows
+- **Input Validation** - Environment variables used instead of inline expansion (injection prevention)
+- **Authorization Header Compatibility** - `Authorization` header parsed case-insensitively, aligning with HTTP semantics
+- **Sensitive Log Redaction** - Pairing QR secret (`code`) is no longer written to app logs
+
+### Infrastructure
+
+- **Automated Release Pipeline** - Tag-triggered builds for arm64 and x86_64 binaries
+- **Homebrew Tap** - `brew tap mneves75/tap && brew install healthsync`
+- **Source Archives** - Each release includes source.zip with SHA256 checksum
+- **ClawdHub Publishing** - `scripts/package-clawdhub.sh` for skill packaging
+
+### Reliability
+
+- **NetworkServer Concurrent Startup Guard** - Parallel `start()` calls coordinate through a single startup path, avoiding listener races
+- **Startup Cancellation Safety** - `stop()` safely cancels in-flight startup attempts before listener publication
+
+### Documentation
+
+- **Comprehensive Diataxis Documentation** - Tutorials, how-to guides, reference, and explanations
+- **Learning Guide** - 10-chapter progressive learning path
+- **HOWTO_CLAWDHUB.md** - Step-by-step guide for publishing skills to ClawdHub
+
+### Testing
+
+- **Regression: Authorization Header Casing** - Test coverage for lowercase `authorization` header acceptance
+- **Regression: Concurrent Server Start** - Test coverage for concurrent `NetworkServer.start()` calls on fixed ports

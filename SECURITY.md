@@ -11,7 +11,7 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-If you discover a security vulnerability in iOS Health Sync, please report it responsibly:
+If you discover a security vulnerability in HealthSync Helper App, please report it responsibly:
 
 ### How to Report
 
@@ -53,7 +53,7 @@ Please provide:
 
 ## Security Design
 
-iOS Health Sync is designed with security as a core principle:
+HealthSync Helper App is designed with security as a core principle:
 
 ### Local-Only Architecture
 
@@ -88,8 +88,8 @@ iOS Health Sync is designed with security as a core principle:
 
 ## Acknowledgments
 
-We appreciate security researchers who help keep iOS Health Sync safe. Contributors who responsibly disclose vulnerabilities will be acknowledged here (with permission).
+We appreciate security researchers who help keep HealthSync Helper App safe. Contributors who responsibly disclose vulnerabilities will be acknowledged here (with permission).
 
 ---
 
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-02-26

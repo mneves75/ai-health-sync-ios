@@ -55,7 +55,8 @@ Without Networking:              With Networking:
 └─────────────────────────────────────────┘
                     ↑
                     │ TLS 1.3
-                    │ mTLS
+                    │ Fingerprint pinning
+                    │ + Bearer token auth
                     │
 ┌─────────────────────────────────────────┐
 │  macOS CLI (CLIENT)                     │
@@ -156,6 +157,10 @@ func start() async throws {
     self.port = Int(listener.port?.rawValue ?? 0)
 }
 ```
+
+**Current implementation note (Unreleased hardening):**
+- `start()` now guards concurrent calls with a single startup path and waiter queue.
+- This avoids listener races and intermittent `Address already in use` errors.
 
 **What's happening:**
 1. Load or create TLS certificate

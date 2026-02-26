@@ -50,3 +50,18 @@ func healthKitServiceReturnsOkWithEmptyResultsWhenNoData() async {
     #expect(response.samples.isEmpty)
     #expect(response.returnedCount == 0)
 }
+
+@Test
+func appInfoPlistUsesApplicationBundlePackageType() throws {
+    let testsDirURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    let plistURL = testsDirURL
+        .deletingLastPathComponent()
+        .appendingPathComponent("Config")
+        .appendingPathComponent("Info.plist")
+
+    let plistData = try Data(contentsOf: plistURL)
+    let plistObject = try PropertyListSerialization.propertyList(from: plistData, format: nil)
+    let plist = try #require(plistObject as? [String: Any], "Info.plist must decode into a dictionary")
+
+    #expect(plist["CFBundlePackageType"] as? String == "APPL")
+}

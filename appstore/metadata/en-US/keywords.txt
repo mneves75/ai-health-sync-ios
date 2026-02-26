@@ -1,0 +1,1 @@
+health,sync,export,local,HealthKit,CSV,JSON,heart rate,sleep,steps,workout,secure,no cloud,backup

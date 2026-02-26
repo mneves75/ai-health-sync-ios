@@ -115,6 +115,7 @@ func makeServer(
     healthResponse: HealthDataResponse,
     protectedData: @escaping @Sendable () async -> Bool,
     deviceName: String = "Test Device",
+    deviceNameProvider: (@Sendable () async -> String)? = nil,
     identityProvider: @escaping @Sendable () throws -> TLSIdentity = { try CertificateService.loadOrCreateIdentity() },
     listenerPort: NWEndpoint.Port? = nil
 ) -> (NetworkServer, PairingService, AuditService) {
@@ -127,7 +128,7 @@ func makeServer(
         auditService: auditService,
         modelContainer: container,
         protectedDataAvailable: protectedData,
-        deviceNameProvider: { deviceName },
+        deviceNameProvider: deviceNameProvider ?? { deviceName },
         identityProvider: identityProvider,
         listenerPort: listenerPort
     )
@@ -183,6 +184,25 @@ func networkServerPairingAndStatusFlow() async throws {
     let status = try decodeJSON(StatusResponse.self, from: response.body)
     #expect(status.deviceName == "Test Device")
     #expect(Set(status.enabledTypes) == Set([.steps, .heartRate]))
+}
+
+@Test
+func networkServerAcceptsLowercaseAuthorizationHeader() async throws {
+    let container = try await makeInMemoryContainer(enabledTypes: [.steps])
+    let (server, pairingService, _) = makeServer(
+        container: container,
+        healthResponse: HealthDataResponse(status: .ok, samples: [], message: nil, hasMore: false, returnedCount: 0),
+        protectedData: { true }
+    )
+    let token = try await performPairing(on: server, pairingService: pairingService)
+    let request = HTTPRequest(
+        method: "GET",
+        path: "/api/v1/status",
+        headers: ["authorization": "Bearer \(token)"],
+        body: Data()
+    )
+    let response = await server.route(request)
+    #expect(response.statusCode == 200)
 }
 
 @Test
@@ -407,6 +427,44 @@ func networkServerStartSetsSnapshotPort() async throws {
     let snapshot = await server.snapshot()
     #expect(snapshot.port > 0)
     await server.stop()
+}
+
+@Test
+func networkServerConcurrentStartOnFixedPort() async throws {
+    let container = try await makeInMemoryContainer(enabledTypes: [.steps])
+    let candidatePorts = (0..<10).compactMap { _ in NWEndpoint.Port(rawValue: UInt16.random(in: 49152...65535)) }
+    var lastError: Error?
+
+    for port in candidatePorts {
+        let (server, _, _) = makeServer(
+            container: container,
+            healthResponse: HealthDataResponse(status: .ok, samples: [], message: nil, hasMore: false, returnedCount: 0),
+            protectedData: { true },
+            deviceNameProvider: {
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                return "Race-Test-Device"
+            },
+            identityProvider: { try CertificateService.createEphemeralIdentity() },
+            listenerPort: port
+        )
+
+        do {
+            async let firstStart: Void = server.start()
+            async let secondStart: Void = server.start()
+            try await firstStart
+            try await secondStart
+
+            let snapshot = await server.snapshot()
+            #expect(snapshot.port == Int(port.rawValue))
+            await server.stop()
+            return
+        } catch {
+            await server.stop()
+            lastError = error
+        }
+    }
+
+    throw CLIError.requestFailed("Concurrent start failed on all candidate ports: \(String(describing: lastError))")
 }
 
 @Test

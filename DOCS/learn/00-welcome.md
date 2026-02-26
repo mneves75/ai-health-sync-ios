@@ -1,4 +1,4 @@
-# Welcome to the iOS Health Sync Learning Guide
+# Welcome to the HealthSync Helper App Learning Guide
 
 **A Comprehensive Tutorial for Junior Developers**
 
@@ -96,7 +96,7 @@ graph TD
 ### ✅ What This Guide Provides
 
 - **Comprehensive written documentation** of Swift 6, SwiftUI, HealthKit, and modern iOS development
-- **Real code examples** extracted from the iOS Health Sync app
+- **Real code examples** extracted from the HealthSync Helper App
 - **Architecture diagrams** showing how components interact
 - **"Stop & Think" questions** for self-reflection and active learning
 - **Reference material** you can return to later

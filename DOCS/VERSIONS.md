@@ -1,6 +1,6 @@
 # Version Requirements & Compatibility
 
-**What You Need to Run iOS Health Sync**
+**What You Need to Run HealthSync Helper App**
 
 ---
 
@@ -267,7 +267,7 @@ Q3 2025 → macOS 15 required
 #!/bin/bash
 # check-compatibility.sh
 
-echo "Checking iOS Health Sync compatibility..."
+echo "Checking HealthSync Helper App compatibility..."
 echo ""
 
 # Check macOS version
@@ -343,9 +343,10 @@ chmod +x check-compatibility.sh
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **1.0.1** | 2026-02-19 | Patch release with networking/auth hardening and documentation refresh |
 | **1.0.0** | 2026-01-07 | Initial public release with iOS 26, Swift 6 support |
 
 ---
 
-**Last Updated:** 2026-01-07
-**Compatibility Matrix Version:** 1.0.0
+**Last Updated:** 2026-02-19
+**Compatibility Matrix Version:** 1.0.1

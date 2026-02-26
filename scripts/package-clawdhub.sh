@@ -12,8 +12,8 @@
 #   -s, --skill     Skill name (default: healthkit-sync)
 #
 # Examples:
-#   ./scripts/package-clawdhub.sh 1.0.0
-#   ./scripts/package-clawdhub.sh --dry-run 1.0.0
+#   ./scripts/package-clawdhub.sh 1.0.1
+#   ./scripts/package-clawdhub.sh --dry-run 1.0.1
 #   ./scripts/package-clawdhub.sh -s my-skill 2.0.0
 
 set -euo pipefail
@@ -49,8 +49,8 @@ ${BOLD}Options:${NC}
   -s, --skill     Skill name (default: $SKILL_NAME)
 
 ${BOLD}Examples:${NC}
-  $0 1.0.0
-  $0 --dry-run 1.0.0
+  $0 1.0.1
+  $0 --dry-run 1.0.1
   $0 -s my-skill 2.0.0
 
 ${BOLD}Requirements:${NC}
@@ -82,7 +82,7 @@ success() {
 validate_semver() {
     local version="$1"
     if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-        error "Invalid version format '$version'. Use semver (e.g., 1.0.0, 1.0.0-beta.1)"
+        error "Invalid version format '$version'. Use semver (e.g., 1.0.1, 1.0.1-beta.1)"
     fi
 }
 
@@ -124,7 +124,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Default version
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.0.1}"
 
 # Validate inputs
 validate_semver "$VERSION"

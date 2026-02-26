@@ -20,6 +20,9 @@ actor NetworkServer {
     private var listener: NWListener?
     private(set) var port: Int = 0
     private(set) var certificateFingerprint: String = ""
+    private var startInProgress = false
+    private var stopRequestedDuringStart = false
+    private var startWaiters: [CheckedContinuation<Void, Error>] = []
     private var requestLog: [String: [Date]] = [:]
     private let rateLimit = 60
     private let rateWindow: TimeInterval = 60
@@ -51,37 +54,76 @@ actor NetworkServer {
 
     func start() async throws {
         if listener != nil { return }
-        let identity = try identityProvider()
-        certificateFingerprint = identity.fingerprint
 
-        let tlsOptions = NWProtocolTLS.Options()
-        sec_protocol_options_set_min_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv13)
-        if let secIdentity = sec_identity_create(identity.identity) {
-            sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
+        if startInProgress {
+            try await withCheckedThrowingContinuation { continuation in
+                startWaiters.append(continuation)
+            }
+            return
         }
 
-        let parameters = NWParameters(tls: tlsOptions)
-        parameters.allowLocalEndpointReuse = true
-        let listener = try NWListener(using: parameters, on: listenerPortOverride ?? .any)
-        let deviceName = await deviceNameProvider()
-        listener.service = NWListener.Service(name: deviceName, type: "_healthsync._tcp")
+        startInProgress = true
+        stopRequestedDuringStart = false
+        var startupResult: Result<Void, Error> = .success(())
 
-        listener.newConnectionHandler = { [weak self] connection in
-            guard let self else { return }
-            Task { await self.handleConnection(connection) }
+        do {
+            let identity = try identityProvider()
+            certificateFingerprint = identity.fingerprint
+
+            let tlsOptions = NWProtocolTLS.Options()
+            sec_protocol_options_set_min_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv13)
+            if let secIdentity = sec_identity_create(identity.identity) {
+                sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
+            }
+
+            let parameters = NWParameters(tls: tlsOptions)
+            parameters.allowLocalEndpointReuse = true
+            let listener = try NWListener(using: parameters, on: listenerPortOverride ?? .any)
+            let deviceName = await deviceNameProvider()
+            listener.service = NWListener.Service(name: deviceName, type: "_healthsync._tcp")
+
+            listener.newConnectionHandler = { [weak self] connection in
+                guard let self else { return }
+                Task { await self.handleConnection(connection) }
+            }
+
+            try await awaitReady(listener, queue: .global())
+            if stopRequestedDuringStart {
+                listener.cancel()
+                throw NetworkServerError.startCancelled
+            }
+
+            let effectivePort = listener.port ?? listenerPortOverride
+            guard let port = effectivePort else {
+                listener.cancel()
+                throw NetworkServerError.startTimeout
+            }
+
+            self.listener = listener
+            self.port = Int(port.rawValue)
+        } catch {
+            startupResult = .failure(error)
         }
 
-        try await awaitReady(listener, queue: .global())
-        let effectivePort = listener.port ?? listenerPortOverride
-        guard let port = effectivePort else {
-            listener.cancel()
-            throw NetworkServerError.startTimeout
+        let waiters = startWaiters
+        startWaiters.removeAll()
+        startInProgress = false
+
+        switch startupResult {
+        case .success:
+            for waiter in waiters {
+                waiter.resume()
+            }
+        case .failure(let error):
+            for waiter in waiters {
+                waiter.resume(throwing: error)
+            }
+            throw error
         }
-        self.listener = listener
-        self.port = Int(port.rawValue)
     }
 
     func stop() {
+        stopRequestedDuringStart = true
         listener?.cancel()
         listener = nil
         port = 0
@@ -327,7 +369,10 @@ actor NetworkServer {
     }
 
     private func bearerToken(from headers: [String: String]) -> String? {
-        guard let value = headers["Authorization"] else { return nil }
+        let authHeader = headers.first { key, _ in
+            key.caseInsensitiveCompare("Authorization") == .orderedSame
+        }?.value
+        guard let value = authHeader else { return nil }
         let parts = value.split(separator: " ")
         guard parts.count == 2, parts[0].lowercased() == "bearer" else { return nil }
         return String(parts[1])
@@ -450,12 +495,12 @@ actor NetworkServer {
         var headers: [String: String] = [:]
         for line in lines.dropFirst() {
             guard let index = line.firstIndex(of: ":") else { continue }
-            let key = line[..<index].trimmingCharacters(in: .whitespaces)
+            let key = line[..<index].trimmingCharacters(in: .whitespaces).lowercased()
             let value = line[line.index(after: index)...].trimmingCharacters(in: .whitespaces)
             headers[key] = value
         }
 
-        let contentLength = Int(headers["Content-Length"] ?? "0") ?? 0
+        let contentLength = Int(headers["content-length"] ?? "0") ?? 0
         if contentLength > maxBodyBytes {
             throw HTTPParseError.bodyTooLarge
         }

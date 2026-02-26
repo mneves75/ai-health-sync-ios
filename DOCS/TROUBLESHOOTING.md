@@ -35,7 +35,7 @@ grep -r "IPHONEOS_DEPLOYMENT_TARGET" "iOS Health Sync App.xcodeproj"
 
 # 2. Must be 17.0 or higher
 # If lower, update in project settings:
-# iOS Health Sync App → TARGETS → General → Minimum Deployments → iOS 17.0
+# HealthSync Helper App → TARGETS → General → Minimum Deployments → iOS 17.0
 ```
 
 **Verification:**
@@ -137,7 +137,7 @@ xcodebuild -project "iOS Health Sync App.xcodeproj" -showBuildSettings | grep IP
 
 3. **Check Local Network permission:**
    - iOS Settings → Privacy → Local Network
-   - Enable "iOS Health Sync"
+   - Enable "HealthSync Helper App"
 
 4. **Try different port:**
    ```swift
@@ -173,7 +173,7 @@ xcodebuild -project "iOS Health Sync App.xcodeproj" -showBuildSettings | grep IP
 
 3. **Manual permission grant:**
    - iOS Settings → Health → Data Access & Devices
-   - Find "iOS Health Sync"
+   - Find "HealthSync Helper App"
    - Enable all desired data types
 
 ---
@@ -327,7 +327,7 @@ xcodebuild -project "iOS Health Sync App.xcodeproj" -showBuildSettings | grep IP
    # Should show:
    # Browsing for _healthsync._tcp local.
    # timestamp: ...
-   # Add 1 0 0 ... iOS Health Sync._healthsync._tcp. local.
+   # Add 1 0 0 ... HealthSync Helper App._healthsync._tcp. local.
    ```
 
 4. **Check firewall:**
@@ -697,4 +697,4 @@ When reporting, include:
 ---
 
 **Last Updated:** 2026-01-07
-**Troubleshooting Version:** 1.0.0
+**Troubleshooting Version:** 1.0.1

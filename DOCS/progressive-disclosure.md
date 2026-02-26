@@ -268,5 +268,5 @@ If using HTML/JS:
 
 ---
 
-**Progressive Disclosure Guide Version:** 1.0.0
+**Progressive Disclosure Guide Version:** 1.0.1
 **Last Updated:** 2026-01-07

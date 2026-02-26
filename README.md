@@ -1,4 +1,4 @@
-# iOS Health Sync
+# HealthSync Helper App
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
@@ -9,16 +9,16 @@
 
 ---
 
-## 🎯 What is iOS Health Sync?
+## 🎯 What is HealthSync Helper App?
 
-iOS Health Sync enables **secure, local-only** health data synchronization between your iPhone and Mac using modern Apple technologies—no cloud services required.
+HealthSync Helper App enables **secure, local-only** health data synchronization between your iPhone and Mac using modern Apple technologies—no cloud services required.
 
 **Two components:**
 1. **iOS App** - Runs a local TLS server serving HealthKit data
 2. **macOS CLI** - Connects to iOS app to retrieve and export health data
 
 **Key Features:**
-- 🔒 **Secure by Design** - TLS 1.3 encryption with mutual certificate authentication
+- 🔒 **Secure by Design** - TLS 1.3 encryption, certificate fingerprint pinning, and pairing-token authorization
 - 🏠 **Local Network Only** - Data never leaves your devices
 - 📱 **Easy Pairing** - Scan QR code to establish trusted connection
 - 🏥 **HealthKit Integration** - Access steps, heart rate, sleep, workouts, and more
@@ -137,7 +137,7 @@ healthsync fetch --types steps --start 2026-01-01
 | [VERSIONS.md](DOCS/VERSIONS.md) | Version requirements & compatibility |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 | [ACCESSIBILITY.md](DOCS/ACCESSIBILITY.md) | Accessibility statement |
-| [CHANGELOG.md](DOCS/learn/CHANGELOG.md) | Version history |
+| [CHANGELOG.md](CHANGELOG.md) | Project version history |
 
 ---
 
@@ -207,13 +207,13 @@ healthsync fetch --start "2026-01-01T00:00:00Z" --end "2026-01-07T23:59:59Z"
 - ✅ No analytics or tracking
 - ✅ Bonjour discovery on local network only
 
-### Mutual TLS Authentication
+### TLS + Certificate Pinning + Pairing Token
 
-**Certificate-based security:**
-1. Both devices generate certificates
-2. QR code contains certificate fingerprint
-3. Mutual verification on every connection
-4. Certificate pinning prevents MITM attacks
+**Connection security flow:**
+1. iOS app serves HTTPS (TLS 1.3) with local certificate
+2. QR code includes host/port + server certificate fingerprint + short-lived pairing code
+3. CLI pins the server fingerprint on every request (MITM protection)
+4. After pairing, API access requires `Authorization: Bearer <token>`
 
 **Security details:** [Security Overview](DOCS/learn/07-security.md)
 
@@ -245,7 +245,7 @@ ai-health-sync-ios/
 ├── macOS/
 │   └── HealthSyncCLI/            # macOS CLI (Swift Package)
 │       ├── Sources/              # CLI implementation
-│       └── Tests/                # Swift tests (39 tests)
+│       └── Tests/                # Swift tests (41 tests)
 │
 ├── skills/                       # Agent Skills (agentskills.io)
 │   └── healthkit-sync/           # HealthKit sync skill
@@ -391,7 +391,7 @@ If you find this project useful:
 
 ---
 
-**iOS Health Sync** - Take control of your health data.
+**HealthSync Helper App** - Take control of your health data.
 
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-02-26
 **Version:** 1.0.0

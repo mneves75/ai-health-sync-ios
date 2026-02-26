@@ -6,7 +6,7 @@
 
 ## How to Use This Study Guide
 
-This guide is designed to help you **master** the iOS Health Sync codebase, not just passively read about it.
+This guide is designed to help you **master** the HealthSync Helper App codebase, not just passively read about it.
 
 ### Daily Study Routine (60-90 minutes)
 

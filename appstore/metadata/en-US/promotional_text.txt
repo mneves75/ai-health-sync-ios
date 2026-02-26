@@ -1,0 +1,1 @@
+Export 31 Apple Health data types from iPhone to Mac over local WiFi. No cloud, no accounts, no tracking. Total privacy. Open source.

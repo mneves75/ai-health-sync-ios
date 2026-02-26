@@ -1,0 +1,45 @@
+Your health data belongs on your devices — not on someone else's server.
+
+HealthSync Helper App transfers Apple Health data directly from iPhone to Mac over your local WiFi. No cloud. No accounts. No tracking. No subscriptions.
+
+HOW IT WORKS
+
+1. Open the app and tap Start Sharing
+2. Scan the QR code with the macOS companion
+3. Export your health data in CSV or JSON
+
+Three steps. Your data never leaves your network.
+
+WHAT YOU CAN EXPORT
+
+31 health data types across 5 categories:
+
+Activity — Steps, walking + running distance, cycling distance, active energy, basal energy, exercise time, stand hours, flights climbed, workouts
+Heart — Heart rate, resting heart rate, walking HR average, HRV, blood pressure (systolic/diastolic), blood oxygen, respiratory rate, body temperature, VO2 max
+Sleep — Sleep analysis, time in bed, time asleep, time awake, REM sleep, core sleep, deep sleep
+Body — Weight, height, BMI, body fat percentage, lean body mass
+
+SECURITY YOU CAN VERIFY
+
+Every transfer uses TLS 1.3 encryption with certificate fingerprint pinning. Pairing happens through a short-lived QR code — no passwords, no accounts. All secrets live in the iOS Keychain. A full audit log records every data access. Rate limiting protects against abuse.
+
+The source code is open under Apache 2.0. You can read every line on GitHub.
+
+TOTAL PRIVACY
+
+Zero analytics. Zero third-party SDKs. Zero advertising libraries. Zero crash reporters. Zero cloud storage. Zero data collection.
+
+Your health data travels from your iPhone to your Mac and nowhere else.
+
+macOS COMPANION
+
+Install the healthsync CLI via Homebrew to receive data on your Mac:
+brew tap mneves75/tap && brew install healthsync
+
+Discover devices, pair via QR code, fetch data, check status — all from Terminal. Export to CSV for spreadsheets or JSON for automation.
+
+OPEN SOURCE
+
+Licensed under Apache 2.0. No hidden dependencies. Fully auditable. Built with Swift 6 and SwiftUI.
+
+Works with Apple Health.

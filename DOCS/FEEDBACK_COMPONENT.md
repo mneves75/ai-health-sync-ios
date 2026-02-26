@@ -354,5 +354,5 @@ We'd love to hear from you again after we make these changes!
 
 ---
 
-**Feedback Component Version:** 1.0.0
+**Feedback Component Version:** 1.0.1
 **Last Updated:** 2026-01-07

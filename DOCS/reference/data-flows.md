@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document provides detailed data flow diagrams for the key operations in iOS Health Sync. Each diagram shows:
+This document provides detailed data flow diagrams for the key operations in HealthSync Helper App. Each diagram shows:
 
 - 🔄 **Data flow** - How data moves between components
 - 🔐 **Security boundaries** - Where authentication/encryption happens
@@ -530,7 +530,7 @@ flowchart LR
 
 ---
 
-**Data Flow Diagrams Version:** 1.0.0
+**Data Flow Diagrams Version:** 1.0.1
 **Last Updated:** 2026-01-07
 
 ---

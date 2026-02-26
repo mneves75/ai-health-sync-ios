@@ -149,7 +149,7 @@ Package and publish to NPM:
 cat > skills/healthkit-sync/package.json << 'EOF'
 {
   "name": "@mneves75/skill-healthkit-sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Agent skill for iOS HealthKit sync CLI",
   "keywords": ["agentskills", "healthkit", "ios", "cli"],
   "repository": "https://github.com/mneves75/ai-health-sync-ios",
@@ -191,7 +191,7 @@ After installing, test that the skill is loaded:
 
 ```
 You: What is the healthkit-sync skill about?
-AI: The healthkit-sync skill provides knowledge about the iOS Health Sync
+AI: The healthkit-sync skill provides knowledge about the HealthSync Helper App
     project, including CLI commands, mTLS security patterns, and Swift 6
     architecture...
 ```

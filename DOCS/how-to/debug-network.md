@@ -45,7 +45,7 @@ ping -c 3 <iOS-IP-address>
 ### Step 2: Check Server Status
 
 **In iOS app:**
-1. Open iOS Health Sync
+1. Open HealthSync Helper App
 2. Verify "Status: Running"
 3. Note the port number (default: 8080)
 
@@ -71,13 +71,13 @@ dns-sd -B _healthsync._tcp local.
 
 # Should output:
 # Browsing for _healthsync._tcp local.
-# Add 1 0 0 ... iOS Health Sync._healthsync._tcp. local.
+# Add 1 0 0 ... HealthSync Helper App._healthsync._tcp. local.
 ```
 
 **Resolve service details:**
 
 ```bash
-dns-sd -L "iOS Health Sync" _healthsync._tcp local.
+dns-sd -L "HealthSync Helper App" _healthsync._tcp local.
 
 # Should show IP address and port
 ```
@@ -98,7 +98,7 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --listapps
 
 **On iOS:**
 - Settings > Privacy & Security > Local Network
-- Ensure "iOS Health Sync" is enabled
+- Ensure "HealthSync Helper App" is enabled
 
 ---
 
@@ -261,7 +261,7 @@ healthsync status
 ```bash
 # Network discovery
 dns-sd -B _healthsync._tcp local.
-dns-sd -L "iOS Health Sync" _healthsync._tcp local.
+dns-sd -L "HealthSync Helper App" _healthsync._tcp local.
 
 # Connectivity
 ping <iOS-IP>

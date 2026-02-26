@@ -177,7 +177,7 @@ healthsync fetch --types steps --format json
 
 **Solution:**
 1. Open Settings > Health > Data Access & Devices
-2. Find iOS Health Sync
+2. Find HealthSync Helper App
 3. Enable "Steps" permission
 
 ### Issue: "Connection timeout"

@@ -170,6 +170,29 @@ func derEncoderUTCTimeEncodesCorrectly() {
 }
 
 @Test
+func derEncoderUTCTimeProduces24HourFormatRegardlessOfLocale() {
+    // Regression test: without en_US_POSIX locale, DateFormatter may produce
+    // 12-hour times with AM/PM on non-English locales (e.g. Italian), breaking
+    // DER certificate parsing. UTCTime must always be "YYMMDDHHmmssZ".
+    let components = DateComponents(
+        timeZone: TimeZone(secondsFromGMT: 0),
+        year: 2025,
+        month: 6,
+        day: 15,
+        hour: 22,  // 10 PM — this is the case that breaks without POSIX locale
+        minute: 30,
+        second: 45
+    )
+    let date = Calendar(identifier: .gregorian).date(from: components)!
+    let result = DEREncoder.utcTime(date)
+    let timeString = String(data: result.suffix(from: 2), encoding: .utf8)
+
+    // Must be 24-hour format, no AM/PM, exactly 13 chars
+    #expect(timeString == "250615223045Z")
+    #expect(result[1] == 13) // UTCTime is always 13 bytes
+}
+
+@Test
 func derEncoderBitStringEncodesCorrectly() {
     let data = Data([0x01, 0x02, 0x03])
     let result = DEREncoder.bitString(data)

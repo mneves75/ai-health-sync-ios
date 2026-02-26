@@ -1,6 +1,6 @@
 # Install Prerequisites: Set Up Your Development Environment
 
-**Get your Mac ready for iOS Health Sync development**
+**Get your Mac ready for HealthSync Helper App development**
 
 ---
 
@@ -15,7 +15,7 @@
 
 ## Goal
 
-Install all required tools and dependencies to build and run iOS Health Sync on your development machine.
+Install all required tools and dependencies to build and run HealthSync Helper App on your development machine.
 
 ---
 

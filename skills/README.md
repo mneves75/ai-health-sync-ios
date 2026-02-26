@@ -34,7 +34,7 @@ Publish to [ClawdHub](https://clawdhub.com) for public distribution:
 
 ```bash
 cd skills/healthkit-sync
-zip -r healthkit-sync-1.0.0.zip SKILL.md TESTING.md references/
+zip -r healthkit-sync-1.0.1.zip SKILL.md TESTING.md references/
 # Upload at https://clawdhub.com/publish
 ```
 

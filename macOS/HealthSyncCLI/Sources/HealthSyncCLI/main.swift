@@ -33,10 +33,10 @@ enum CLIError: Error {
 // MARK: - Version Information
 
 /// CLI version following semantic versioning (SemVer)
-let cliVersion = "1.0.0"
+let cliVersion = "1.0.1"
 
 /// Build metadata
-let cliBuildDate = "2026-01-07"
+let cliBuildDate = "2026-02-19"
 
 @main
 struct HealthSyncCLI {

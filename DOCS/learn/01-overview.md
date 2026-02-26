@@ -8,7 +8,7 @@
 
 After this chapter, you will be able to:
 
-- ✅ Explain what the iOS Health Sync App does in simple terms
+- ✅ Explain what the HealthSync Helper App does in simple terms
 - ✅ Understand the problem it solves
 - ✅ Describe how the two apps work together
 - ✅ Identify the main technologies involved
@@ -37,7 +37,7 @@ Before we begin, ask yourself:
 
 **This app solves that problem.**
 
-The iOS Health Sync App lets you:
+The HealthSync Helper App lets you:
 1. **Pair** your iPhone with your Mac (like Bluetooth pairing)
 2. **Transfer** your health data directly (no cloud involved)
 3. **Export** your data in useful formats (CSV for spreadsheets, JSON for developers)
