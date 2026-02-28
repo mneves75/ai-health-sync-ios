@@ -52,8 +52,9 @@ actor NetworkServer {
         self.listenerPortOverride = listenerPort
     }
 
-    func start() async throws {
+    func start(overridePort: NWEndpoint.Port? = nil) async throws {
         if listener != nil { return }
+        let effectivePortOverride = overridePort ?? listenerPortOverride
 
         if startInProgress {
             try await withCheckedThrowingContinuation { continuation in
@@ -78,7 +79,7 @@ actor NetworkServer {
 
             let parameters = NWParameters(tls: tlsOptions)
             parameters.allowLocalEndpointReuse = true
-            let listener = try NWListener(using: parameters, on: listenerPortOverride ?? .any)
+            let listener = try NWListener(using: parameters, on: effectivePortOverride ?? .any)
             let deviceName = await deviceNameProvider()
             listener.service = NWListener.Service(name: deviceName, type: "_healthsync._tcp")
 

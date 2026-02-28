@@ -4,6 +4,7 @@
 import CryptoKit
 import Foundation
 import HealthKit
+import Network
 import Observation
 import os
 import SwiftData
@@ -32,6 +33,7 @@ final class AppState {
     var lastError: String?
     var protectedDataAvailable: Bool = true
     var healthAuthorizationStatus: Bool = false
+    private var savedServerPort: Int = 0
 
     init(modelContainer: ModelContainer, backgroundTaskManager: BackgroundTaskManaging = UIApplication.shared) {
         self.modelContainer = modelContainer
@@ -182,10 +184,12 @@ final class AppState {
             isServerStarting = true
             defer { isServerStarting = false }
 
-            try await networkServer.start()
+            let portOverride: NWEndpoint.Port? = savedServerPort > 0 ? NWEndpoint.Port(rawValue: UInt16(savedServerPort)) : nil
+            try await networkServer.start(overridePort: portOverride)
             isServerRunning = true
             let snapshot = await networkServer.snapshot()
             serverPort = snapshot.port
+            savedServerPort = snapshot.port
             serverFingerprint = snapshot.fingerprint
             AppLoggers.app.info("Server started - port: \(self.serverPort), fingerprint: \(self.serverFingerprint.prefix(16), privacy: .public)...")
 
