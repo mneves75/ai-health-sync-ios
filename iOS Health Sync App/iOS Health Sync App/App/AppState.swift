@@ -33,7 +33,6 @@ final class AppState {
     var lastError: String?
     var protectedDataAvailable: Bool = true
     var healthAuthorizationStatus: Bool = false
-    private var savedServerPort: Int = 0
 
     init(modelContainer: ModelContainer, backgroundTaskManager: BackgroundTaskManaging = UIApplication.shared) {
         self.modelContainer = modelContainer
@@ -184,12 +183,14 @@ final class AppState {
             isServerStarting = true
             defer { isServerStarting = false }
 
-            let portOverride: NWEndpoint.Port? = savedServerPort > 0 ? NWEndpoint.Port(rawValue: UInt16(savedServerPort)) : nil
+            let savedPort = syncConfiguration.savedServerPort ?? 0
+            let portOverride: NWEndpoint.Port? = savedPort > 0 ? NWEndpoint.Port(rawValue: UInt16(savedPort)) : nil
             try await networkServer.start(overridePort: portOverride)
             isServerRunning = true
             let snapshot = await networkServer.snapshot()
             serverPort = snapshot.port
-            savedServerPort = snapshot.port
+            syncConfiguration.savedServerPort = snapshot.port
+            try? modelContainer.mainContext.save()
             serverFingerprint = snapshot.fingerprint
             AppLoggers.app.info("Server started - port: \(self.serverPort), fingerprint: \(self.serverFingerprint.prefix(16), privacy: .public)...")
 

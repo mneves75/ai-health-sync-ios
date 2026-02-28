@@ -9,12 +9,14 @@ final class SyncConfiguration {
     @Attribute(.unique) var id: UUID
     var enabledTypesCSV: String
     var lastExportAt: Date?
+    var savedServerPort: Int?
     var createdAt: Date
 
-    init(id: UUID = UUID(), enabledTypes: [HealthDataType] = HealthDataType.allCases, lastExportAt: Date? = nil, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), enabledTypes: [HealthDataType] = HealthDataType.allCases, lastExportAt: Date? = nil, savedServerPort: Int? = nil, createdAt: Date = Date()) {
         self.id = id
         self.enabledTypesCSV = Self.serialize(types: enabledTypes)
         self.lastExportAt = lastExportAt
+        self.savedServerPort = savedServerPort
         self.createdAt = createdAt
     }
 
