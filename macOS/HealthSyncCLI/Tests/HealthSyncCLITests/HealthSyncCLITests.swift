@@ -43,6 +43,66 @@ func parseOptionsHandlesExplicitFalseFlag() throws {
     #expect(options["--auto-scan"] == "false")
 }
 
+// MARK: - Health Data Type Tests
+
+@Suite("Health data type coverage")
+struct HealthDataTypeCoverageTests {
+    @Test("Supports dietary calories and protein")
+    func supportsDietaryMinimumTypes() {
+        #expect(HealthDataType(rawValue: "dietaryEnergyConsumed") == .dietaryEnergyConsumed)
+        #expect(HealthDataType(rawValue: "dietaryProtein") == .dietaryProtein)
+    }
+
+    @Test("Supports all dietary HealthKit quantity identifiers")
+    func supportsAllDietaryTypes() {
+        let dietaryRawValues = [
+            "dietaryEnergyConsumed",
+            "dietaryWater",
+            "dietaryProtein",
+            "dietaryCarbohydrates",
+            "dietaryFiber",
+            "dietarySugar",
+            "dietaryFatTotal",
+            "dietaryFatSaturated",
+            "dietaryFatMonounsaturated",
+            "dietaryFatPolyunsaturated",
+            "dietaryCholesterol",
+            "dietarySodium",
+            "dietaryPotassium",
+            "dietaryCalcium",
+            "dietaryIron",
+            "dietaryMagnesium",
+            "dietaryPhosphorus",
+            "dietaryZinc",
+            "dietaryChloride",
+            "dietaryCopper",
+            "dietaryManganese",
+            "dietarySelenium",
+            "dietaryMolybdenum",
+            "dietaryIodine",
+            "dietaryChromium",
+            "dietaryBiotin",
+            "dietaryFolate",
+            "dietaryNiacin",
+            "dietaryPantothenicAcid",
+            "dietaryRiboflavin",
+            "dietaryThiamin",
+            "dietaryVitaminA",
+            "dietaryVitaminB6",
+            "dietaryVitaminB12",
+            "dietaryVitaminC",
+            "dietaryVitaminD",
+            "dietaryVitaminE",
+            "dietaryVitaminK",
+            "dietaryCaffeine"
+        ]
+
+        for rawValue in dietaryRawValues {
+            #expect(HealthDataType(rawValue: rawValue) != nil)
+        }
+    }
+}
+
 // MARK: - Local Network Host Validation Tests
 
 @Suite("isLocalNetworkHost validation")

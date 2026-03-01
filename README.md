@@ -21,7 +21,7 @@ HealthSync Helper App enables **secure, local-only** health data synchronization
 - 🔒 **Secure by Design** - TLS 1.3 encryption, certificate fingerprint pinning, and pairing-token authorization
 - 🏠 **Local Network Only** - Data never leaves your devices
 - 📱 **Easy Pairing** - Scan QR code to establish trusted connection
-- 🏥 **HealthKit Integration** - Access steps, heart rate, sleep, workouts, and more
+- 🏥 **HealthKit Integration** - Access activity, vitals, sleep, body metrics, and dietary nutrition (calories, protein, macros, vitamins, minerals, water)
 
 ---
 
@@ -330,7 +330,7 @@ We welcome contributions! Please see:
 
 ### Version 1.0 (Current)
 
-- ✅ Basic health data sync (steps, heart rate, sleep, workouts)
+- ✅ Broad HealthKit sync (activity, vitals, sleep, body, and dietary nutrition data)
 - ✅ QR code pairing
 - ✅ TLS encryption
 - ✅ CLI tool

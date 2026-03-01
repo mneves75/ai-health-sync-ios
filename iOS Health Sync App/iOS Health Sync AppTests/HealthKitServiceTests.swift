@@ -40,6 +40,82 @@ func healthSampleMapperMapsQuantitySample() {
 }
 
 @Test
+func healthDataTypeSupportsAllDietaryTypes() {
+    let dietaryTypes: [HealthDataType] = [
+        .dietaryEnergyConsumed,
+        .dietaryWater,
+        .dietaryProtein,
+        .dietaryCarbohydrates,
+        .dietaryFiber,
+        .dietarySugar,
+        .dietaryFatTotal,
+        .dietaryFatSaturated,
+        .dietaryFatMonounsaturated,
+        .dietaryFatPolyunsaturated,
+        .dietaryCholesterol,
+        .dietarySodium,
+        .dietaryPotassium,
+        .dietaryCalcium,
+        .dietaryIron,
+        .dietaryMagnesium,
+        .dietaryPhosphorus,
+        .dietaryZinc,
+        .dietaryChloride,
+        .dietaryCopper,
+        .dietaryManganese,
+        .dietarySelenium,
+        .dietaryMolybdenum,
+        .dietaryIodine,
+        .dietaryChromium,
+        .dietaryBiotin,
+        .dietaryFolate,
+        .dietaryNiacin,
+        .dietaryPantothenicAcid,
+        .dietaryRiboflavin,
+        .dietaryThiamin,
+        .dietaryVitaminA,
+        .dietaryVitaminB6,
+        .dietaryVitaminB12,
+        .dietaryVitaminC,
+        .dietaryVitaminD,
+        .dietaryVitaminE,
+        .dietaryVitaminK,
+        .dietaryCaffeine
+    ]
+
+    for type in dietaryTypes {
+        #expect(type.sampleType != nil)
+    }
+}
+
+@Test
+func healthSampleMapperMapsDietaryEnergyAndProtein() {
+    let now = Date()
+
+    let caloriesType = HKQuantityType(.dietaryEnergyConsumed)
+    let caloriesSample = HKQuantitySample(
+        type: caloriesType,
+        quantity: HKQuantity(unit: .kilocalorie(), doubleValue: 550),
+        start: now.addingTimeInterval(-3600),
+        end: now
+    )
+    let caloriesDTO = HealthSampleMapper.mapSample(caloriesSample, requestedType: .dietaryEnergyConsumed)
+    #expect(caloriesDTO?.value == 550)
+    #expect(caloriesDTO?.unit == HKUnit.kilocalorie().unitString)
+
+    let proteinType = HKQuantityType(.dietaryProtein)
+    let proteinSample = HKQuantitySample(
+        type: proteinType,
+        quantity: HKQuantity(unit: .gram(), doubleValue: 42),
+        start: now.addingTimeInterval(-3600),
+        end: now
+    )
+    let proteinDTO = HealthSampleMapper.mapSample(proteinSample, requestedType: .dietaryProtein)
+    #expect(proteinDTO?.value == 42)
+    #expect(proteinDTO?.unit == HKUnit.gram().unitString)
+}
+
+@Test
 func healthKitServiceReturnsOkWithEmptyResultsWhenNoData() async {
     // NOTE: For READ-only permissions, we cannot check if authorization was granted.
     // Apple hides this for privacy reasons. We just try to fetch - if no permission

@@ -15,6 +15,46 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     case flightsClimbed
     case workouts
 
+    case dietaryEnergyConsumed
+    case dietaryWater
+    case dietaryProtein
+    case dietaryCarbohydrates
+    case dietaryFiber
+    case dietarySugar
+    case dietaryFatTotal
+    case dietaryFatSaturated
+    case dietaryFatMonounsaturated
+    case dietaryFatPolyunsaturated
+    case dietaryCholesterol
+    case dietarySodium
+    case dietaryPotassium
+    case dietaryCalcium
+    case dietaryIron
+    case dietaryMagnesium
+    case dietaryPhosphorus
+    case dietaryZinc
+    case dietaryChloride
+    case dietaryCopper
+    case dietaryManganese
+    case dietarySelenium
+    case dietaryMolybdenum
+    case dietaryIodine
+    case dietaryChromium
+    case dietaryBiotin
+    case dietaryFolate
+    case dietaryNiacin
+    case dietaryPantothenicAcid
+    case dietaryRiboflavin
+    case dietaryThiamin
+    case dietaryVitaminA
+    case dietaryVitaminB6
+    case dietaryVitaminB12
+    case dietaryVitaminC
+    case dietaryVitaminD
+    case dietaryVitaminE
+    case dietaryVitaminK
+    case dietaryCaffeine
+
     case heartRate
     case restingHeartRate
     case walkingHeartRateAverage
@@ -53,6 +93,45 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .standHours: return "Stand Hours"
         case .flightsClimbed: return "Flights Climbed"
         case .workouts: return "Workouts"
+        case .dietaryEnergyConsumed: return "Dietary Calories"
+        case .dietaryWater: return "Dietary Water"
+        case .dietaryProtein: return "Dietary Protein"
+        case .dietaryCarbohydrates: return "Dietary Carbohydrates"
+        case .dietaryFiber: return "Dietary Fiber"
+        case .dietarySugar: return "Dietary Sugar"
+        case .dietaryFatTotal: return "Dietary Fat Total"
+        case .dietaryFatSaturated: return "Dietary Saturated Fat"
+        case .dietaryFatMonounsaturated: return "Dietary Monounsaturated Fat"
+        case .dietaryFatPolyunsaturated: return "Dietary Polyunsaturated Fat"
+        case .dietaryCholesterol: return "Dietary Cholesterol"
+        case .dietarySodium: return "Dietary Sodium"
+        case .dietaryPotassium: return "Dietary Potassium"
+        case .dietaryCalcium: return "Dietary Calcium"
+        case .dietaryIron: return "Dietary Iron"
+        case .dietaryMagnesium: return "Dietary Magnesium"
+        case .dietaryPhosphorus: return "Dietary Phosphorus"
+        case .dietaryZinc: return "Dietary Zinc"
+        case .dietaryChloride: return "Dietary Chloride"
+        case .dietaryCopper: return "Dietary Copper"
+        case .dietaryManganese: return "Dietary Manganese"
+        case .dietarySelenium: return "Dietary Selenium"
+        case .dietaryMolybdenum: return "Dietary Molybdenum"
+        case .dietaryIodine: return "Dietary Iodine"
+        case .dietaryChromium: return "Dietary Chromium"
+        case .dietaryBiotin: return "Dietary Biotin"
+        case .dietaryFolate: return "Dietary Folate"
+        case .dietaryNiacin: return "Dietary Niacin"
+        case .dietaryPantothenicAcid: return "Dietary Pantothenic Acid"
+        case .dietaryRiboflavin: return "Dietary Riboflavin"
+        case .dietaryThiamin: return "Dietary Thiamin"
+        case .dietaryVitaminA: return "Dietary Vitamin A"
+        case .dietaryVitaminB6: return "Dietary Vitamin B6"
+        case .dietaryVitaminB12: return "Dietary Vitamin B12"
+        case .dietaryVitaminC: return "Dietary Vitamin C"
+        case .dietaryVitaminD: return "Dietary Vitamin D"
+        case .dietaryVitaminE: return "Dietary Vitamin E"
+        case .dietaryVitaminK: return "Dietary Vitamin K"
+        case .dietaryCaffeine: return "Dietary Caffeine"
         case .heartRate: return "Heart Rate"
         case .restingHeartRate: return "Resting Heart Rate"
         case .walkingHeartRateAverage: return "Walking HR Avg"
@@ -89,6 +168,45 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .standHours: return HKObjectType.quantityType(forIdentifier: .appleStandTime)
         case .flightsClimbed: return HKObjectType.quantityType(forIdentifier: .flightsClimbed)
         case .workouts: return HKObjectType.workoutType()
+        case .dietaryEnergyConsumed: return HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed)
+        case .dietaryWater: return HKObjectType.quantityType(forIdentifier: .dietaryWater)
+        case .dietaryProtein: return HKObjectType.quantityType(forIdentifier: .dietaryProtein)
+        case .dietaryCarbohydrates: return HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates)
+        case .dietaryFiber: return HKObjectType.quantityType(forIdentifier: .dietaryFiber)
+        case .dietarySugar: return HKObjectType.quantityType(forIdentifier: .dietarySugar)
+        case .dietaryFatTotal: return HKObjectType.quantityType(forIdentifier: .dietaryFatTotal)
+        case .dietaryFatSaturated: return HKObjectType.quantityType(forIdentifier: .dietaryFatSaturated)
+        case .dietaryFatMonounsaturated: return HKObjectType.quantityType(forIdentifier: .dietaryFatMonounsaturated)
+        case .dietaryFatPolyunsaturated: return HKObjectType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)
+        case .dietaryCholesterol: return HKObjectType.quantityType(forIdentifier: .dietaryCholesterol)
+        case .dietarySodium: return HKObjectType.quantityType(forIdentifier: .dietarySodium)
+        case .dietaryPotassium: return HKObjectType.quantityType(forIdentifier: .dietaryPotassium)
+        case .dietaryCalcium: return HKObjectType.quantityType(forIdentifier: .dietaryCalcium)
+        case .dietaryIron: return HKObjectType.quantityType(forIdentifier: .dietaryIron)
+        case .dietaryMagnesium: return HKObjectType.quantityType(forIdentifier: .dietaryMagnesium)
+        case .dietaryPhosphorus: return HKObjectType.quantityType(forIdentifier: .dietaryPhosphorus)
+        case .dietaryZinc: return HKObjectType.quantityType(forIdentifier: .dietaryZinc)
+        case .dietaryChloride: return HKObjectType.quantityType(forIdentifier: .dietaryChloride)
+        case .dietaryCopper: return HKObjectType.quantityType(forIdentifier: .dietaryCopper)
+        case .dietaryManganese: return HKObjectType.quantityType(forIdentifier: .dietaryManganese)
+        case .dietarySelenium: return HKObjectType.quantityType(forIdentifier: .dietarySelenium)
+        case .dietaryMolybdenum: return HKObjectType.quantityType(forIdentifier: .dietaryMolybdenum)
+        case .dietaryIodine: return HKObjectType.quantityType(forIdentifier: .dietaryIodine)
+        case .dietaryChromium: return HKObjectType.quantityType(forIdentifier: .dietaryChromium)
+        case .dietaryBiotin: return HKObjectType.quantityType(forIdentifier: .dietaryBiotin)
+        case .dietaryFolate: return HKObjectType.quantityType(forIdentifier: .dietaryFolate)
+        case .dietaryNiacin: return HKObjectType.quantityType(forIdentifier: .dietaryNiacin)
+        case .dietaryPantothenicAcid: return HKObjectType.quantityType(forIdentifier: .dietaryPantothenicAcid)
+        case .dietaryRiboflavin: return HKObjectType.quantityType(forIdentifier: .dietaryRiboflavin)
+        case .dietaryThiamin: return HKObjectType.quantityType(forIdentifier: .dietaryThiamin)
+        case .dietaryVitaminA: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminA)
+        case .dietaryVitaminB6: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminB6)
+        case .dietaryVitaminB12: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminB12)
+        case .dietaryVitaminC: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminC)
+        case .dietaryVitaminD: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminD)
+        case .dietaryVitaminE: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminE)
+        case .dietaryVitaminK: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminK)
+        case .dietaryCaffeine: return HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)
         case .heartRate: return HKObjectType.quantityType(forIdentifier: .heartRate)
         case .restingHeartRate: return HKObjectType.quantityType(forIdentifier: .restingHeartRate)
         case .walkingHeartRateAverage: return HKObjectType.quantityType(forIdentifier: .walkingHeartRateAverage)

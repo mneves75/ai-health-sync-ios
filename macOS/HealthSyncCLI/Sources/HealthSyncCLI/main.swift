@@ -1138,6 +1138,45 @@ enum HealthDataType: String, CaseIterable, Codable {
     case standHours
     case flightsClimbed
     case workouts
+    case dietaryEnergyConsumed
+    case dietaryWater
+    case dietaryProtein
+    case dietaryCarbohydrates
+    case dietaryFiber
+    case dietarySugar
+    case dietaryFatTotal
+    case dietaryFatSaturated
+    case dietaryFatMonounsaturated
+    case dietaryFatPolyunsaturated
+    case dietaryCholesterol
+    case dietarySodium
+    case dietaryPotassium
+    case dietaryCalcium
+    case dietaryIron
+    case dietaryMagnesium
+    case dietaryPhosphorus
+    case dietaryZinc
+    case dietaryChloride
+    case dietaryCopper
+    case dietaryManganese
+    case dietarySelenium
+    case dietaryMolybdenum
+    case dietaryIodine
+    case dietaryChromium
+    case dietaryBiotin
+    case dietaryFolate
+    case dietaryNiacin
+    case dietaryPantothenicAcid
+    case dietaryRiboflavin
+    case dietaryThiamin
+    case dietaryVitaminA
+    case dietaryVitaminB6
+    case dietaryVitaminB12
+    case dietaryVitaminC
+    case dietaryVitaminD
+    case dietaryVitaminE
+    case dietaryVitaminK
+    case dietaryCaffeine
     case heartRate
     case restingHeartRate
     case walkingHeartRateAverage

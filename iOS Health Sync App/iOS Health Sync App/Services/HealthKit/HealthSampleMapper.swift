@@ -98,6 +98,16 @@ struct HealthSampleMapper {
             return .kilocalorie()
         case .exerciseTime:
             return .minute()
+        case .dietaryEnergyConsumed:
+            return .kilocalorie()
+        case .dietaryWater:
+            return .literUnit(with: .milli)
+        case .dietaryProtein, .dietaryCarbohydrates, .dietaryFiber, .dietarySugar, .dietaryFatTotal, .dietaryFatSaturated, .dietaryFatMonounsaturated, .dietaryFatPolyunsaturated:
+            return .gram()
+        case .dietaryCholesterol, .dietarySodium, .dietaryPotassium, .dietaryCalcium, .dietaryIron, .dietaryMagnesium, .dietaryPhosphorus, .dietaryZinc, .dietaryChloride, .dietaryCopper, .dietaryManganese, .dietaryNiacin, .dietaryPantothenicAcid, .dietaryRiboflavin, .dietaryThiamin, .dietaryVitaminB6, .dietaryVitaminC, .dietaryVitaminE, .dietaryCaffeine:
+            return .gramUnit(with: .milli)
+        case .dietarySelenium, .dietaryMolybdenum, .dietaryIodine, .dietaryChromium, .dietaryBiotin, .dietaryFolate, .dietaryVitaminA, .dietaryVitaminB12, .dietaryVitaminD, .dietaryVitaminK:
+            return .gramUnit(with: .micro)
         case .heartRate, .restingHeartRate, .walkingHeartRateAverage:
             return .count().unitDivided(by: .minute())
         case .heartRateVariability:
