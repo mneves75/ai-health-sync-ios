@@ -630,8 +630,16 @@ struct ConfigStore {
         let url = try configURL()
         try data.write(to: url, options: [.atomic])
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
-        // Save token to Keychain
-        try KeychainStore.saveToken(token, for: config.host)
+
+        // Save token to Keychain, but fall back to a local 0600 file when Keychain
+        // is unavailable in this session (common in headless/non-GUI environments).
+        do {
+            try KeychainStore.saveToken(token, for: config.host)
+            try? removeFallbackToken(for: config.host)
+        } catch {
+            try saveFallbackToken(token, for: config.host)
+            fputs("Warning: Keychain unavailable, token stored in ~/.healthsync/token-<host>.txt (0600).\n", stderr)
+        }
     }
 
     static func load() throws -> (config: ClientConfig, token: String) {
@@ -643,8 +651,53 @@ struct ConfigStore {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let config = try decoder.decode(ClientConfig.self, from: data)
-        let token = try KeychainStore.loadToken(for: config.host)
+
+        let token: String
+        if let keychainToken = try? KeychainStore.loadToken(for: config.host) {
+            token = keychainToken
+        } else if let fileToken = try? loadFallbackToken(for: config.host) {
+            token = fileToken
+        } else {
+            throw CLIError.missingConfig
+        }
+
         return (config, token)
+    }
+
+    private static func fallbackTokenURL(for host: String) throws -> URL {
+        let base = try configURL().deletingLastPathComponent()
+        let safeHost = host.unicodeScalars.map { scalar -> String in
+            CharacterSet.alphanumerics.contains(scalar) ? String(scalar) : "_"
+        }.joined()
+        return base.appendingPathComponent("token-\(safeHost).txt")
+    }
+
+    private static func saveFallbackToken(_ token: String, for host: String) throws {
+        guard let data = token.data(using: .utf8) else {
+            throw CLIError.requestFailed("Failed to encode token")
+        }
+        let url = try fallbackTokenURL(for: host)
+        try data.write(to: url, options: [.atomic])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+
+    private static func loadFallbackToken(for host: String) throws -> String {
+        let url = try fallbackTokenURL(for: host)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw CLIError.missingConfig
+        }
+        let data = try Data(contentsOf: url)
+        guard let token = String(data: data, encoding: .utf8), !token.isEmpty else {
+            throw CLIError.missingConfig
+        }
+        return token
+    }
+
+    private static func removeFallbackToken(for host: String) throws {
+        let url = try fallbackTokenURL(for: host)
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
     }
 }
 
