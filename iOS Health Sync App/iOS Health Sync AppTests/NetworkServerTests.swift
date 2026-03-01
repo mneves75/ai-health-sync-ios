@@ -187,6 +187,93 @@ func networkServerPairingAndStatusFlow() async throws {
 }
 
 @Test
+func networkServerStatusFallsBackToLegacyTypesWithoutCapabilitiesHeader() async throws {
+    let container = try await makeInMemoryContainer(enabledTypes: [.steps, .dietaryProtein, .dietaryBiotin])
+    let (server, pairingService, _) = makeServer(
+        container: container,
+        healthResponse: HealthDataResponse(status: .ok, samples: [], message: nil, hasMore: false, returnedCount: 0),
+        protectedData: { true }
+    )
+    let token = try await performPairing(on: server, pairingService: pairingService)
+
+    let request = HTTPRequest(
+        method: "GET",
+        path: "/api/v1/status",
+        headers: ["Authorization": "Bearer \(token)"],
+        body: Data()
+    )
+
+    let response = await server.route(request)
+    #expect(response.statusCode == 200)
+
+    let status = try decodeJSON(StatusResponse.self, from: response.body)
+    #expect(status.enabledTypes == [.steps])
+}
+
+@Test
+func networkServerStatusReturnsCapabilitiesIntersectionWhenHeaderProvided() async throws {
+    let container = try await makeInMemoryContainer(enabledTypes: [.steps, .dietaryProtein, .dietaryBiotin])
+    let (server, pairingService, _) = makeServer(
+        container: container,
+        healthResponse: HealthDataResponse(status: .ok, samples: [], message: nil, hasMore: false, returnedCount: 0),
+        protectedData: { true }
+    )
+    let token = try await performPairing(on: server, pairingService: pairingService)
+
+    let request = HTTPRequest(
+        method: "GET",
+        path: "/api/v1/status",
+        headers: [
+            "Authorization": "Bearer \(token)",
+            "X-HealthSync-Supported-Types": "steps,dietaryProtein,dietaryBiotin"
+        ],
+        body: Data()
+    )
+
+    let response = await server.route(request)
+    #expect(response.statusCode == 200)
+
+    let status = try decodeJSON(StatusResponse.self, from: response.body)
+    #expect(Set(status.enabledTypes) == Set([.steps, .dietaryProtein, .dietaryBiotin]))
+}
+
+@Test
+func networkServerTypesEndpointRespectsCapabilitiesHeader() async throws {
+    let container = try await makeInMemoryContainer(enabledTypes: [.steps, .dietaryProtein, .dietaryBiotin])
+    let (server, pairingService, _) = makeServer(
+        container: container,
+        healthResponse: HealthDataResponse(status: .ok, samples: [], message: nil, hasMore: false, returnedCount: 0),
+        protectedData: { true }
+    )
+    let token = try await performPairing(on: server, pairingService: pairingService)
+
+    let legacyRequest = HTTPRequest(
+        method: "GET",
+        path: "/api/v1/health/types",
+        headers: ["Authorization": "Bearer \(token)"],
+        body: Data()
+    )
+    let legacyResponse = await server.route(legacyRequest)
+    #expect(legacyResponse.statusCode == 200)
+    let legacyTypes = try decodeJSON(TypesResponse.self, from: legacyResponse.body)
+    #expect(legacyTypes.enabledTypes == [.steps])
+
+    let capabilitiesRequest = HTTPRequest(
+        method: "GET",
+        path: "/api/v1/health/types",
+        headers: [
+            "Authorization": "Bearer \(token)",
+            "X-HealthSync-Supported-Types": "steps,dietaryProtein,dietaryBiotin"
+        ],
+        body: Data()
+    )
+    let capabilitiesResponse = await server.route(capabilitiesRequest)
+    #expect(capabilitiesResponse.statusCode == 200)
+    let capabilitiesTypes = try decodeJSON(TypesResponse.self, from: capabilitiesResponse.body)
+    #expect(Set(capabilitiesTypes.enabledTypes) == Set([.steps, .dietaryProtein, .dietaryBiotin]))
+}
+
+@Test
 func networkServerAcceptsLowercaseAuthorizationHeader() async throws {
     let container = try await makeInMemoryContainer(enabledTypes: [.steps])
     let (server, pairingService, _) = makeServer(
@@ -699,4 +786,41 @@ func modelContainerCreatesWithMigrationPlan() throws {
     let fetched = try context.fetch(descriptor)
     #expect(fetched.count == 1)
     #expect(fetched.first?.enabledTypes == [.steps])
+}
+
+@Test
+func syncConfigurationMigratesLegacyDefaultTypesToCurrentDefaults() {
+    let legacyCSV = HealthDataType.legacyV1AllCases
+        .map(\.rawValue)
+        .sorted()
+        .joined(separator: ",")
+
+    let config = SyncConfiguration(enabledTypes: [.steps])
+    config.enabledTypesCSV = legacyCSV
+
+    let migrated = config.migrateEnabledTypesIfNeeded()
+
+    #expect(migrated)
+    #expect(config.enabledTypesCSV.hasPrefix("v2|"))
+    #expect(Set(config.enabledTypes) == Set(HealthDataType.allCases))
+    #expect(config.enabledTypes.contains(.dietaryEnergyConsumed))
+    #expect(config.enabledTypes.contains(.dietaryProtein))
+}
+
+@Test
+func syncConfigurationMigratesLegacyFormatWithoutChangingCustomSelection() {
+    let customLegacyCSV = [HealthDataType.steps, .heartRate]
+        .map(\.rawValue)
+        .sorted()
+        .joined(separator: ",")
+
+    let config = SyncConfiguration(enabledTypes: [.steps])
+    config.enabledTypesCSV = customLegacyCSV
+
+    let migrated = config.migrateEnabledTypesIfNeeded()
+
+    #expect(migrated)
+    #expect(config.enabledTypesCSV.hasPrefix("v2|"))
+    #expect(Set(config.enabledTypes) == Set([.steps, .heartRate]))
+    #expect(!config.enabledTypes.contains(.dietaryProtein))
 }

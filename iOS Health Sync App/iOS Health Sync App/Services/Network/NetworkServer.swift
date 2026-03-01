@@ -31,6 +31,7 @@ actor NetworkServer {
     private let maxRequestDuration: TimeInterval = 10
     private let startTimeout: TimeInterval = 5
     private let listenerPortOverride: NWEndpoint.Port?
+    private static let legacyV1SupportedTypes = Set(HealthDataType.legacyV1AllCases)
 
     init(
         healthService: HealthDataProviding,
@@ -189,9 +190,9 @@ actor NetworkServer {
 
         switch (method, path) {
         case ("GET", "/api/v1/status"):
-            return await handleStatus(requestId: requestId)
+            return await handleStatus(request, requestId: requestId)
         case ("GET", "/api/v1/health/types"):
-            return await handleTypes(requestId: requestId)
+            return await handleTypes(request, requestId: requestId)
         case ("POST", "/api/v1/health/data"):
             return await handleHealthData(request, requestId: requestId)
         default:
@@ -234,13 +235,14 @@ actor NetworkServer {
         }
     }
 
-    private func handleStatus(requestId: String) async -> HTTPResponse {
+    private func handleStatus(_ request: HTTPRequest, requestId: String) async -> HTTPResponse {
         let enabled = await loadEnabledTypes()
+        let compatibleEnabled = compatibleEnabledTypes(for: request, enabledTypes: enabled)
         let response = StatusResponse(
             status: "ok",
             version: "1",
             deviceName: await deviceNameProvider(),
-            enabledTypes: enabled,
+            enabledTypes: compatibleEnabled,
             serverTime: Date()
         )
         await auditService.record(eventType: "api.request", details: [
@@ -250,9 +252,10 @@ actor NetworkServer {
         return HTTPResponse.json(statusCode: 200, body: response)
     }
 
-    private func handleTypes(requestId: String) async -> HTTPResponse {
+    private func handleTypes(_ request: HTTPRequest, requestId: String) async -> HTTPResponse {
         let enabled = await loadEnabledTypes()
-        let response = TypesResponse(enabledTypes: enabled)
+        let compatibleEnabled = compatibleEnabledTypes(for: request, enabledTypes: enabled)
+        let response = TypesResponse(enabledTypes: compatibleEnabled)
         await auditService.record(eventType: "api.request", details: [
             "path": "/api/v1/health/types",
             "requestId": requestId
@@ -376,6 +379,32 @@ actor NetworkServer {
         let parts = value.split(separator: " ")
         guard parts.count == 2, parts[0].lowercased() == "bearer" else { return nil }
         return String(parts[1])
+    }
+
+    private func compatibleEnabledTypes(for request: HTTPRequest, enabledTypes: [HealthDataType]) -> [HealthDataType] {
+        if let supportedTypes = supportedTypes(from: request.headers) {
+            return enabledTypes.filter { supportedTypes.contains($0) }
+        }
+
+        // Legacy behavior for older CLI builds that don't send capabilities.
+        return enabledTypes.filter { Self.legacyV1SupportedTypes.contains($0) }
+    }
+
+    private func supportedTypes(from headers: [String: String]) -> Set<HealthDataType>? {
+        let headerValue = headers.first { key, _ in
+            key.caseInsensitiveCompare("X-HealthSync-Supported-Types") == .orderedSame
+        }?.value
+
+        guard let headerValue else { return nil }
+
+        let parsed = Set(
+            headerValue
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .compactMap { HealthDataType(rawValue: $0) }
+        )
+
+        return parsed.isEmpty ? nil : parsed
     }
 
     private func isRateLimited(token: String) -> Bool {

@@ -103,6 +103,40 @@ struct HealthDataTypeCoverageTests {
     }
 }
 
+@Suite("Server response decoding")
+struct ResponseDecodingTests {
+    @Test("TypesResponse handles unknown enabled types")
+    func typesResponseHandlesUnknownEnabledTypes() throws {
+        let json = """
+        {
+            "enabledTypes": ["steps", "dietaryBiotin", "futureType"]
+        }
+        """
+
+        let decoder = JSONDecoder()
+        let response = try decoder.decode(TypesResponse.self, from: Data(json.utf8))
+        #expect(response.enabledTypes == [.steps, .dietaryBiotin])
+    }
+
+    @Test("StatusResponse handles unknown enabled types")
+    func statusResponseHandlesUnknownEnabledTypes() throws {
+        let json = """
+        {
+            "status": "ok",
+            "version": "1",
+            "deviceName": "HealthSync-TEST",
+            "enabledTypes": ["steps", "dietaryBiotin", "futureType"],
+            "serverTime": "2026-03-01T12:00:00Z"
+        }
+        """
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let response = try decoder.decode(StatusResponse.self, from: Data(json.utf8))
+        #expect(response.enabledTypes == [.steps, .dietaryBiotin])
+    }
+}
+
 // MARK: - Local Network Host Validation Tests
 
 @Suite("isLocalNetworkHost validation")

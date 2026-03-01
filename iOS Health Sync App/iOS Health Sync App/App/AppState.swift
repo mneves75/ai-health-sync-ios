@@ -68,6 +68,9 @@ final class AppState {
         do {
             if let existing = try context.fetch(FetchDescriptor<SyncConfiguration>()).first {
                 self.syncConfiguration = existing
+                if existing.migrateEnabledTypesIfNeeded() {
+                    try context.save()
+                }
             } else {
                 let newConfig = SyncConfiguration()
                 context.insert(newConfig)

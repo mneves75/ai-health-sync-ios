@@ -80,6 +80,41 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     case bodyFatPercentage
     case leanBodyMass
 
+    /// Data types supported by CLI v1.0.0 before dietary metrics were added.
+    static let legacyV1AllCases: [HealthDataType] = [
+        .steps,
+        .distanceWalkingRunning,
+        .distanceCycling,
+        .activeEnergyBurned,
+        .basalEnergyBurned,
+        .exerciseTime,
+        .standHours,
+        .flightsClimbed,
+        .workouts,
+        .heartRate,
+        .restingHeartRate,
+        .walkingHeartRateAverage,
+        .heartRateVariability,
+        .bloodPressureSystolic,
+        .bloodPressureDiastolic,
+        .bloodOxygen,
+        .respiratoryRate,
+        .bodyTemperature,
+        .vo2Max,
+        .sleepAnalysis,
+        .sleepInBed,
+        .sleepAsleep,
+        .sleepAwake,
+        .sleepREM,
+        .sleepCore,
+        .sleepDeep,
+        .weight,
+        .height,
+        .bodyMassIndex,
+        .bodyFatPercentage,
+        .leanBodyMass
+    ]
+
     var id: String { rawValue }
 
     var displayName: String {

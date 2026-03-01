@@ -505,7 +505,7 @@ struct HealthSyncCLI {
         let (config, token) = try ConfigStore.load()
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
         let response: TypesResponse = try await client.send(path: "/api/v1/health/types", method: "GET", body: EmptyBody(), authorized: true)
-        print(response.enabledTypes.map { $0.rawValue }.joined(separator: ", "))
+        print(response.enabledTypes.map(\.rawValue).joined(separator: ", "))
     }
 
     static func fetch(args: [String]) async throws {
@@ -724,6 +724,8 @@ struct HealthSyncClient {
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.setValue("HealthSyncCLI/\(cliVersion)", forHTTPHeaderField: "User-Agent")
+        request.setValue(HealthDataType.allCases.map(\.rawValue).joined(separator: ","), forHTTPHeaderField: "X-HealthSync-Supported-Types")
         if method != "GET" {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
@@ -1088,16 +1090,44 @@ struct HealthDataResponse: Codable {
     let message: String?
 }
 
-struct StatusResponse: Codable {
+struct StatusResponse: Decodable {
     let status: String
     let version: String
     let deviceName: String
     let enabledTypes: [HealthDataType]
     let serverTime: Date
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case version
+        case deviceName
+        case enabledTypes
+        case serverTime
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = try container.decode(String.self, forKey: .status)
+        version = try container.decode(String.self, forKey: .version)
+        deviceName = try container.decode(String.self, forKey: .deviceName)
+        serverTime = try container.decode(Date.self, forKey: .serverTime)
+        let rawTypes = try container.decode([String].self, forKey: .enabledTypes)
+        enabledTypes = rawTypes.compactMap { HealthDataType(rawValue: $0) }
+    }
 }
 
-struct TypesResponse: Codable {
+struct TypesResponse: Decodable {
     let enabledTypes: [HealthDataType]
+
+    enum CodingKeys: String, CodingKey {
+        case enabledTypes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawTypes = try container.decode([String].self, forKey: .enabledTypes)
+        enabledTypes = rawTypes.compactMap { HealthDataType(rawValue: $0) }
+    }
 }
 
 struct PairRequest: Codable {

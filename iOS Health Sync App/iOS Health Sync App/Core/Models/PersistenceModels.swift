@@ -23,12 +23,35 @@ final class SyncConfiguration {
         set { enabledTypesCSV = Self.serialize(types: newValue) }
     }
 
+    private static let csvV2Prefix = "v2|"
+
     static func serialize(types: [HealthDataType]) -> String {
-        types.map { $0.rawValue }.sorted().joined(separator: ",")
+        let csv = types.map { $0.rawValue }.sorted().joined(separator: ",")
+        return "\(csvV2Prefix)\(csv)"
     }
 
     static func deserialize(csv: String) -> [HealthDataType] {
-        csv.split(separator: ",").compactMap { HealthDataType(rawValue: String($0)) }
+        let normalized = csv.hasPrefix(csvV2Prefix) ? String(csv.dropFirst(csvV2Prefix.count)) : csv
+        return normalized.split(separator: ",").compactMap { HealthDataType(rawValue: String($0)) }
+    }
+
+    /// Migrates legacy CSV formats and upgrades legacy defaults to include newly introduced types.
+    /// Returns true if `enabledTypesCSV` was changed.
+    func migrateEnabledTypesIfNeeded() -> Bool {
+        guard !enabledTypesCSV.hasPrefix(Self.csvV2Prefix) else { return false }
+
+        let parsedTypes = Self.deserialize(csv: enabledTypesCSV)
+        let legacySet = Set(HealthDataType.legacyV1AllCases)
+        let parsedSet = Set(parsedTypes)
+
+        if parsedSet == legacySet {
+            enabledTypesCSV = Self.serialize(types: HealthDataType.allCases)
+            return true
+        }
+
+        // Normalize legacy format to v2 without changing user-selected types.
+        enabledTypesCSV = Self.serialize(types: parsedTypes)
+        return true
     }
 }
 
