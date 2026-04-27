@@ -140,6 +140,7 @@ actor HealthKitService {
 
     private static let maxWorkoutsPerRouteExport = 50
     private static let maxPointsPerRoute = 10_000
+    private static let maxTotalPointsPerResponse = 100_000
 
     func fetchRoutes(startDate: Date, endDate: Date) async -> RouteResponse {
         guard isAvailable() else {
@@ -161,8 +162,13 @@ actor HealthKitService {
 
         var routes: [WorkoutRoute] = []
         var anyPointsTruncated = false
+        var totalPoints = 0
 
         for workout in workoutsToProcess {
+            if totalPoints >= Self.maxTotalPointsPerResponse {
+                anyPointsTruncated = true
+                break
+            }
             // 2. Fetch routes associated with this workout
             let routeType = HKSeriesType.workoutRoute()
             let workoutPredicate = HKQuery.predicateForObjects(from: workout)
@@ -197,6 +203,7 @@ actor HealthKitService {
                 }
                 if !points.isEmpty {
                     if points.count >= Self.maxPointsPerRoute { anyPointsTruncated = true }
+                    totalPoints += points.count
                     routes.append(WorkoutRoute(workoutId: workout.uuid, routeId: route.uuid,
                                                startDate: route.startDate, endDate: route.endDate,
                                                points: points))

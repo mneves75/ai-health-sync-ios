@@ -349,7 +349,10 @@ actor NetworkServer {
             return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid request body")
         }
 
-        // Enforce max date range to bound memory usage
+        // Enforce valid and bounded date range
+        guard payload.endDate > payload.startDate else {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "endDate must be after startDate")
+        }
         let rangeDays = payload.endDate.timeIntervalSince(payload.startDate) / 86_400
         if rangeDays > Self.maxRouteDays {
             return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Date range exceeds \(Int(Self.maxRouteDays))-day maximum for route export")
