@@ -35,11 +35,10 @@ struct ContentView: View {
                     if hasPairedDevice {
                         connectedMacsSection
                     }
-                    if hasPairedDevice {
-                        // The 178-type picker is hidden until the user has actually
-                        // paired a Mac. Configuring shared categories before there's
-                        // anywhere to share to is premature and adds noise to the
-                        // first-launch screen.
+                    // Data types shown as soon as the user has granted Health
+                    // access — they need to be able to see and adjust what
+                    // will be shared *before* pairing, not after.
+                    if appState.healthAuthorizationStatus {
                         dataTypesSection
                     }
                     auditSection
@@ -51,10 +50,10 @@ struct ContentView: View {
             .searchable(
                 text: $typeSearch,
                 placement: .navigationBarDrawer(displayMode: .automatic),
-                prompt: hasPairedDevice ? "Search categories" : ""
+                prompt: appState.healthAuthorizationStatus ? "Search categories" : ""
             )
             .toolbar {
-                if hasPairedDevice {
+                if appState.healthAuthorizationStatus {
                     ToolbarItem(placement: .topBarTrailing) {
                         presetMenuToolbar
                     }
