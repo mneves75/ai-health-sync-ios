@@ -196,4 +196,31 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     var isCategoryType: Bool {
         isCategorySleepType || self == .mindfulMinutes
     }
+
+    /// Types enabled for a new installation. Sensitive types (cardiac, reproductive,
+    /// temperature) are excluded and must be opted-in explicitly by the user.
+    /// Existing stored configurations are unaffected — deserialization only returns
+    /// types present in the saved CSV, so new types never appear in existing installs.
+    static var defaultEnabledTypes: [HealthDataType] {
+        [
+            .steps, .distanceWalkingRunning, .distanceCycling,
+            .activeEnergyBurned, .basalEnergyBurned,
+            .exerciseTime, .standHours, .flightsClimbed,
+            .workouts,
+            .heartRate, .restingHeartRate, .walkingHeartRateAverage,
+            .heartRateVariability,
+            .bloodPressureSystolic, .bloodPressureDiastolic,
+            .bloodOxygen, .respiratoryRate, .vo2Max,
+            .sleepAnalysis, .sleepCore, .sleepDeep, .sleepREM, .sleepAwake,
+            .weight, .height, .bodyMassIndex, .bodyFatPercentage, .leanBodyMass,
+            .runningSpeed, .runningStrideLength, .runningGroundContactTime,
+            .runningVerticalOscillation, .runningPower,
+            .cyclingCadence, .cyclingPower, .cyclingSpeed,
+            .walkingSpeed, .walkingStepLength,
+            .walkingAsymmetryPercentage, .walkingDoubleSupportPercentage,
+            .timeInDaylight, .mindfulMinutes,
+        ]
+        // Excluded from default: wristTemperature, atrialFibrillationBurden,
+        // physicalEffort, waistCircumference — require explicit user opt-in.
+    }
 }

@@ -11,7 +11,7 @@ final class SyncConfiguration {
     var lastExportAt: Date?
     var createdAt: Date
 
-    init(id: UUID = UUID(), enabledTypes: [HealthDataType] = HealthDataType.allCases, lastExportAt: Date? = nil, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), enabledTypes: [HealthDataType] = HealthDataType.defaultEnabledTypes, lastExportAt: Date? = nil, createdAt: Date = Date()) {
         self.id = id
         self.enabledTypesCSV = Self.serialize(types: enabledTypes)
         self.lastExportAt = lastExportAt

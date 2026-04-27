@@ -26,6 +26,20 @@ struct HealthSampleMapper {
             if requestedType.isCategorySleepType, !matchesSleepType(requestedType, categorySample: categorySample) {
                 return nil
             }
+            // Mindful sessions: export duration in minutes, not the raw category code
+            if requestedType == .mindfulMinutes {
+                let minutes = categorySample.endDate.timeIntervalSince(categorySample.startDate) / 60
+                return HealthSampleDTO(
+                    id: categorySample.uuid,
+                    type: requestedType.rawValue,
+                    value: minutes,
+                    unit: "min",
+                    startDate: categorySample.startDate,
+                    endDate: categorySample.endDate,
+                    sourceName: sourceName,
+                    metadata: nil
+                )
+            }
             let metadata = requestedType.isCategorySleepType ? sleepMetadata(for: categorySample) : nil
             return HealthSampleDTO(
                 id: categorySample.uuid,
@@ -130,8 +144,10 @@ struct HealthSampleMapper {
         case .heartRate, .restingHeartRate, .walkingHeartRateAverage:
             return .count().unitDivided(by: .minute())
         case .heartRateVariability:
-            // HealthKit stores SDNN in seconds; expose as milliseconds for usability
-            return .secondUnit(with: .milli)
+            // HealthKit stores SDNN internally in seconds. Keep seconds for v1 wire
+            // compat — changing to ms would silently corrupt existing client data by 1000x.
+            // Version the API before changing this unit.
+            return .second()
         case .bloodPressureSystolic, .bloodPressureDiastolic:
             return .millimeterOfMercury()
         case .bloodOxygen:
