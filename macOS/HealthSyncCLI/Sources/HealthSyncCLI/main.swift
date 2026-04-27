@@ -498,8 +498,12 @@ struct HealthSyncCLI {
 
         // Show version info
         print("📦 Version: \(response.version)")
-        if !supportedServerVersions.contains(response.version) {
-            fputs("warning: server protocol v\(response.version) is not supported by this CLI (supports: \(supportedServerVersions.sorted().joined(separator: ", "))). Update healthsync.\n", stderr)
+        warnVersionSkew(response.version)
+    }
+
+    static func warnVersionSkew(_ serverVersion: String) {
+        if !supportedServerVersions.contains(serverVersion) {
+            fputs("warning: server protocol v\(serverVersion) is not supported by this CLI (supports: \(supportedServerVersions.sorted().joined(separator: ", "))). Update healthsync.\n", stderr)
         }
     }
 
@@ -558,6 +562,8 @@ struct HealthSyncCLI {
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
         let request = HealthDataRequest(startDate: startDate, endDate: endDate, types: types)
         let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: request, authorized: true)
+
+        if let v = response.version { warnVersionSkew(v) }
 
         switch outputFormat {
         case .json:
@@ -1097,6 +1103,7 @@ struct HealthDataResponse: Codable {
     let status: HealthDataStatus
     let samples: [HealthSampleDTO]
     let message: String?
+    let version: String?
 }
 
 struct EnabledTypesWire: Decodable {
