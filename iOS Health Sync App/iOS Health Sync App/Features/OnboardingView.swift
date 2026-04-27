@@ -54,11 +54,24 @@ struct OnboardingView: View {
 
     private var privacyPage: some View {
         VStack(spacing: 16) {
+            HStack {
+                Button {
+                    withAnimation { currentPage = 0 }
+                } label: {
+                    Label("Back", systemImage: "chevron.backward")
+                        .labelStyle(.titleAndIcon)
+                        .font(.body)
+                }
+                .padding(.leading, 16)
+                Spacer()
+            }
+            .padding(.top, 12)
             Spacer()
             Image(systemName: "lock.shield.fill")
-                .font(.system(size: 80))
+                .font(.system(size: 72))
                 .foregroundStyle(.green)
-            Text("Your Data Stays Private")
+                .accessibilityHidden(true)
+            Text("How We Protect Your Data")
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
             VStack(alignment: .leading, spacing: 16) {
@@ -88,32 +101,37 @@ struct OnboardingView: View {
 
     private var permissionPage: some View {
         VStack(spacing: 24) {
+            HStack {
+                Button {
+                    withAnimation { currentPage = 1 }
+                } label: {
+                    Label("Back", systemImage: "chevron.backward")
+                        .labelStyle(.titleAndIcon)
+                        .font(.body)
+                }
+                .padding(.leading, 16)
+                Spacer()
+            }
+            .padding(.top, 12)
+
             Spacer()
             Image(systemName: "heart.fill")
                 .font(.system(size: 80))
                 .foregroundStyle(.red)
                 .symbolEffect(.pulse, options: .repeating, value: isRequestingPermission)
-            Text("Grant HealthKit Access")
+            Text("Grant Health Access")
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
-            Text("HealthSync will mirror your full Apple Health profile to your destinations. You can adjust selections any time on the main screen.")
+            Text("Standard categories on. Sensitive categories off until you choose. Nothing leaves this iPhone until you pair a Mac.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    Text("**On by default:** all standard categories (activity, vitals, sleep, workouts, body, nutrition, hearing, mobility, respiratory & metabolic, lifestyle, symptoms).")
-                }
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "lock.shield").foregroundStyle(.orange)
-                    Text("**Off by default:** reproductive health, mental-health symptoms, alcohol, cardiac event alerts. Enable any of these later with one tap.")
-                }
-            }
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 32)
+            Text("You can change selections any time.")
+                .font(.callout)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
             Spacer()
             VStack(spacing: 12) {
                 Button {
@@ -121,7 +139,7 @@ struct OnboardingView: View {
                 } label: {
                     HStack {
                         if isRequestingPermission { ProgressView().tint(.white) }
-                        Text(isRequestingPermission ? "Opening Health…" : "Grant HealthKit Access")
+                        Text(isRequestingPermission ? "Opening Health…" : "Grant Health Access")
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -129,7 +147,7 @@ struct OnboardingView: View {
                 .controlSize(.large)
                 .disabled(isRequestingPermission)
 
-                Button("Skip for now") {
+                Button("Set up later") {
                     hasCompletedOnboarding = true
                 }
                 .foregroundStyle(.secondary)

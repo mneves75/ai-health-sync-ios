@@ -24,19 +24,42 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if shouldShowGettingStarted {
-                    gettingStartedSection
+            ScrollViewReader { proxy in
+                List {
+                    if shouldShowGettingStarted {
+                        gettingStartedSection(scrollProxy: proxy)
+                    }
+                    serverSection
+                    pairingSection
+                        .id("pairingSection")
+                    if hasPairedDevice {
+                        connectedMacsSection
+                    }
+                    if hasPairedDevice {
+                        // The 178-type picker is hidden until the user has actually
+                        // paired a Mac. Configuring shared categories before there's
+                        // anywhere to share to is premature and adds noise to the
+                        // first-launch screen.
+                        dataTypesSection
+                    }
+                    auditSection
+                    settingsSection
                 }
-                statusSection
-                serverSection
-                pairingSection
-                dataTypesSection
-                auditSection
-                settingsSection
+                .listStyle(.insetGrouped)
             }
-            .listStyle(.insetGrouped)
             .navigationTitle("HealthSync")
+            .searchable(
+                text: $typeSearch,
+                placement: .navigationBarDrawer(displayMode: .automatic),
+                prompt: hasPairedDevice ? "Search categories" : ""
+            )
+            .toolbar {
+                if hasPairedDevice {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        presetMenuToolbar
+                    }
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             appState.handleScenePhaseChange(newPhase)
@@ -111,7 +134,7 @@ struct ContentView: View {
 
     /// Step-by-step setup checklist for non-technical users. Each row reflects
     /// the actual state of the app and dims when complete.
-    private var gettingStartedSection: some View {
+    private func gettingStartedSection(scrollProxy: ScrollViewProxy) -> some View {
         Section {
             stepRow(
                 number: 1,
@@ -122,6 +145,14 @@ struct ContentView: View {
             ) {
                 HapticFeedback.impact(.medium)
                 Task { await appState.requestHealthAuthorization() }
+            }
+
+            // Inline warning if the probe found no data despite the user
+            // granting access. iOS hides denial for read-only, so this is the
+            // only signal we have to surface a likely "actually denied" state.
+            if appState.healthAuthorizationStatus,
+               appState.healthDataProbeState == .limited {
+                limitedAccessWarningRow
             }
 
             stepRow(
@@ -143,12 +174,12 @@ struct ContentView: View {
                 detail: "Install HealthSync CLI on your Mac via Homebrew, then run \u{201C}healthsync scan\u{201D} to pair using the QR code below.",
                 isComplete: hasPairedDevice,
                 isActionable: appState.isServerRunning && !hasPairedDevice,
-                actionLabel: hasPairedDevice ? nil : "See QR Code Below"
+                actionLabel: hasPairedDevice ? nil : "Scroll to QR code"
             ) {
-                // No-op: pairing happens on the Mac side. The QR section below
-                // is the visual target. Tapping the row gives haptic feedback
-                // so the user knows their tap registered while they look down.
                 HapticFeedback.selection()
+                withAnimation {
+                    scrollProxy.scrollTo("pairingSection", anchor: .top)
+                }
             }
         } header: {
             HStack {
@@ -184,6 +215,8 @@ struct ContentView: View {
         return "\(done) of 3"
     }
 
+    @ScaledMetric(relativeTo: .body) private var stepBadgeSize: CGFloat = 28
+
     @ViewBuilder
     private func stepRow(
         number: Int,
@@ -199,7 +232,7 @@ struct ContentView: View {
                 ZStack {
                     Circle()
                         .fill(isComplete ? Color.green : (isActionable ? Color.accentColor : Color.secondary.opacity(0.25)))
-                        .frame(width: 28, height: 28)
+                        .frame(width: stepBadgeSize, height: stepBadgeSize)
                     if isComplete {
                         Image(systemName: "checkmark")
                             .font(.callout.weight(.bold))
@@ -242,60 +275,88 @@ struct ContentView: View {
         .accessibilityHint(detail)
     }
 
-    private var statusSection: some View {
-        Section("Status") {
-            LabeledContent("Version", value: appVersion)
-            LabeledContent("Device", value: appState.protectedDataAvailable ? "Unlocked" : "Locked")
-            healthKitStatusRow
+    /// Connected Macs section — visible only once the user has paired at
+    /// least one Mac. Shows each paired device with a per-device Revoke
+    /// action and the security-critical "Revoke All Pairings" at the bottom.
+    /// The destructive action is *not* in the audit section anymore.
+    private var connectedMacsSection: some View {
+        Section {
+            ForEach(pairedDevices, id: \.id) { device in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: device.isActive ? "laptopcomputer" : "laptopcomputer.slash")
+                            .foregroundStyle(device.isActive ? .green : .secondary)
+                        Text(device.name)
+                            .font(.body)
+                        Spacer()
+                        if device.isActive {
+                            Text("Active").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if let lastSeen = device.lastSeenAt {
+                        Text("Last seen \(lastSeen, style: .relative) ago")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Awaiting first connection")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            Button(role: .destructive) {
+                HapticFeedback.notification(.warning)
+                showRevokeConfirmation = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "xmark.shield.fill")
+                    Text("Revoke All Pairings")
+                }
+            }
+            .confirmationDialog(
+                "Revoke all pairings?",
+                isPresented: $showRevokeConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Revoke All", role: .destructive) {
+                    Task { await appState.revokeAllPairings() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Paired Macs will lose access. They will need to scan a new QR code to reconnect.")
+            }
+        } header: {
+            Text("Connected Macs (\(pairedDevices.count))")
+        } footer: {
             if let lastExport = appState.syncConfiguration.lastExportAt {
-                LabeledContent("Last Sync", value: lastExport.formatted())
+                Text("Last sync \(lastExport, style: .relative) ago.")
+                    .font(.caption)
             }
         }
     }
 
-    /// Tri-state HealthKit status row. iOS hides read-only denial, so we
-    /// approximate via `healthDataProbeState` and show a "Checking…" state
-    /// while the probe is in flight to avoid a flash of the orange "Limited"
-    /// warning during the brief probe window.
-    @ViewBuilder
-    private var healthKitStatusRow: some View {
-        if !appState.healthAuthorizationStatus {
-            LabeledContent("Health Access", value: "Not yet requested")
-        } else {
-            switch appState.healthDataProbeState {
-            case .unknown, .probing:
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text("Health Access")
-                    Spacer()
-                    Text("Checking…").foregroundStyle(.secondary)
-                }
-            case .granted:
-                HStack {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    Text("Health Access")
-                    Spacer()
-                    Text("Granted").foregroundStyle(.secondary)
-                }
-            case .limited:
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                        Text("Health Access").foregroundStyle(.primary)
-                        Spacer()
-                        Text("Limited").foregroundStyle(.orange)
-                    }
-                    Text("HealthSync hasn't been able to read any data over the last 30 days. If you have data in Apple Health, open Settings → Privacy & Security → Health → HealthSync and enable the categories you want to share.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button("Open Settings") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                    .font(.caption.weight(.semibold))
+    /// Inline warning row shown inside Getting Started when the user has granted
+    /// Health access but the probe found no data — usually indicates a silent
+    /// per-category denial. Surfaces a Settings deep link without claiming what
+    /// we can't actually verify.
+    private var limitedAccessWarningRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                Text("HealthSync isn't seeing any data")
+                    .font(.subheadline.weight(.medium))
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            }
+            Text("If you have data in Apple Health, open Settings to enable the categories you want to share.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
                 }
             }
+            .font(.caption.weight(.semibold))
         }
     }
 
@@ -321,12 +382,12 @@ struct ContentView: View {
                     Task { await appState.stopServer() }
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "stop.fill")
+                        Image(systemName: "pause.fill")
                         Text("Stop Sharing")
                     }
+                    .foregroundStyle(.red)
                 }
                 .liquidGlassButtonStyle(.standard)
-                .tint(.red)
             } else {
                 Button {
                     HapticFeedback.impact(.medium)
@@ -351,12 +412,12 @@ struct ContentView: View {
             Text("Sharing")
         } footer: {
             if appState.isServerRunning {
-                Label("Screen stays on while sharing so your Mac can keep its connection. This uses more battery — turn off when you're done.",
+                Label("Screen stays on while pairing. You can lock the phone after a Mac connects.",
                       systemImage: "sun.max.fill")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            } else {
-                Text("Sharing makes your data available for your paired Mac to fetch over your local Wi-Fi.")
+            } else if !hasPairedDevice {
+                Text("Turn this on to make your iPhone visible to the HealthSync CLI on your Mac.")
                     .font(.caption)
             }
         }
@@ -372,23 +433,27 @@ struct ContentView: View {
     @State private var pendingSensitiveType: HealthDataType?
     @State private var showFingerprintExpanded = false
 
-    /// Live countdown for pairing-code expiry. Refreshes every second so users see
-    /// urgency. Goes orange < 60s, red when expired.
+    /// Static expiry display. The previous live ticker created anxiety while the
+    /// user was mid-pairing on a Mac across the room. A static "Valid until 3:42 PM"
+    /// reads as confidence; the row updates only when the code actually expires
+    /// (checked via TimelineView at a 30s cadence — visually quiet, no per-second
+    /// repaint).
     @ViewBuilder
     private func expirationCountdown(for expiresAt: Date) -> some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            let remaining = expiresAt.timeIntervalSince(context.date)
-            let expired = remaining <= 0
-            let urgent = remaining < 60 && !expired
-            LabeledContent("Expires") {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            let expired = expiresAt < context.date
+            LabeledContent("Valid until") {
                 if expired {
-                    Text("Expired — tap Refresh Code")
-                        .foregroundStyle(.red)
-                        .font(.callout)
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                        Text("Expired — tap Refresh")
+                            .foregroundStyle(.orange)
+                            .font(.callout)
+                    }
                 } else {
-                    Text(expiresAt, style: .relative)
-                        .foregroundStyle(urgent ? .orange : .secondary)
-                        .font(urgent ? .callout.weight(.semibold) : .callout)
+                    Text(expiresAt, format: .dateTime.hour().minute())
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
                         .monospacedDigit()
                 }
             }
@@ -437,8 +502,22 @@ struct ContentView: View {
                     .padding(.vertical, 8)
 
                 // Pairing details
-                LabeledContent("Code", value: qr.code)
-                    .font(.system(.body, design: .monospaced))
+                LabeledContent("Code") {
+                    Button {
+                        UIPasteboard.general.string = qr.code
+                        HapticFeedback.notification(.success)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(qr.code)
+                                .font(.system(.body, design: .monospaced))
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption)
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Pairing code \(qr.code), tap to copy")
+                }
                 expirationCountdown(for: qr.expiresAt)
                 fingerprintRow(qr.certificateFingerprint)
 
@@ -510,41 +589,55 @@ struct ContentView: View {
                     }
                 }
 
-                // Pairing instructions for first-time users
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("How to pair your Mac", systemImage: "info.circle")
-                        .font(.footnote.weight(.semibold))
+                // First-pair instructions — hidden once a Mac is paired since
+                // the user no longer needs them. Tucked in a DisclosureGroup
+                // so even pre-pair the user can dismiss them after reading.
+                if !hasPairedDevice {
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("1. Open Terminal on your Mac and install the CLI:")
+                                .font(.footnote)
+                            Text("brew install mneves75/tap/healthsync")
+                                .font(.footnote.monospaced())
+                                .textSelection(.enabled)
+                                .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                            Text("2. Tap \u{201C}Copy to Clipboard\u{201D} above, then run on your Mac:")
+                                .font(.footnote)
+                            Text("healthsync scan")
+                                .font(.footnote.monospaced())
+                                .textSelection(.enabled)
+                                .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                            Text("3. Keep this iPhone app open until pairing finishes.")
+                                .font(.footnote)
+                        }
                         .foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("1. Open Terminal on your Mac and install the CLI:")
-                            .font(.footnote)
-                        Text("brew install mneves75/tap/healthsync")
-                            .font(.footnote.monospaced())
-                            .textSelection(.enabled)
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
-                        Text("2. Tap \u{201C}Copy to Clipboard\u{201D} above on this iPhone, then run on your Mac:")
-                            .font(.footnote)
-                        Text("healthsync scan")
-                            .font(.footnote.monospaced())
-                            .textSelection(.enabled)
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
-                        Text("3. Keep this iPhone app open until pairing finishes (a few seconds).")
-                            .font(.footnote)
+                        .padding(.top, 4)
+                    } label: {
+                        Label("How to pair your Mac", systemImage: "info.circle")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
-                    .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
             } else {
-                ContentUnavailableView {
-                    Label("Not Sharing Yet", systemImage: "qrcode")
-                } description: {
-                    Text("Tap \u{201C}Start Sharing\u{201D} above to generate a pairing QR code for your Mac.")
+                if hasPairedDevice {
+                    ContentUnavailableView {
+                        Label("Sharing Off", systemImage: "qrcode")
+                    } description: {
+                        Text("Tap \u{201C}Start Sharing\u{201D} above when you want your paired Mac to fetch fresh data.")
+                    }
+                    .listRowBackground(Color.clear)
+                } else {
+                    ContentUnavailableView {
+                        Label("Not Sharing Yet", systemImage: "qrcode")
+                    } description: {
+                        Text("Tap \u{201C}Start Sharing\u{201D} above to generate a pairing QR code for your Mac.")
+                    }
+                    .listRowBackground(Color.clear)
                 }
-                .listRowBackground(Color.clear)
             }
         }
         .animation(.smooth, value: appState.pairingQRCode != nil)
@@ -600,8 +693,6 @@ struct ContentView: View {
 
     private var dataTypesSection: some View {
         Section {
-            presetMenu
-            searchField
             ForEach(HealthDataType.Category.allCases, id: \.self) { category in
                 if !typesIn(category).isEmpty {
                     categoryRow(for: category)
@@ -609,14 +700,14 @@ struct ContentView: View {
             }
         } header: {
             HStack {
-                Text("Shared Data Types")
+                Text("Shared Categories")
                 Spacer()
                 Text("\(appState.syncConfiguration.enabledTypes.count) of \(HealthDataType.allCases.count)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         } footer: {
-            Text("Sensitive types (reproductive health, mental-health symptoms, alcohol, cardiac event alerts) are off by default. Enable them deliberately.")
+            Text("Sensitive categories (reproductive health, mental-health symptoms, alcohol, cardiac alerts) are off by default. Tap any to enable.")
                 .font(.caption)
         }
         .alert("Enable sensitive types?", isPresented: Binding(
@@ -646,60 +737,36 @@ struct ContentView: View {
             }
         } message: {
             if let type = pendingSensitiveType {
-                Text("Enabling \(type.displayName) lets HealthSync read this category from Apple Health and transmit it to your paired Mac. You can disable it again at any time.")
+                Text("Share \(type.displayName) with your Mac? You can turn this off any time.")
             }
         }
     }
 
-    private var presetMenu: some View {
+    /// Toolbar version of the preset menu — replaces the in-list row that was
+    /// disguised as content. The wand icon is the standard iOS metaphor for
+    /// "smart shortcuts." Disable All is *not* in this menu — it's intentionally
+    /// hard to reach to avoid one-tap nukes; users can still toggle off
+    /// individually or use the iOS Settings.app revoke path.
+    private var presetMenuToolbar: some View {
         Menu {
-            ForEach(HealthDataType.Preset.allCases, id: \.self) { preset in
-                Button {
-                    HapticFeedback.impact(.light)
-                    let hasSensitive = preset.types.contains(where: { $0.isSensitive })
-                    if hasSensitive {
-                        showSensitiveConfirmation = preset
-                    } else {
-                        applyPreset(preset)
+            Section("Apply Preset") {
+                ForEach(HealthDataType.Preset.allCases, id: \.self) { preset in
+                    Button {
+                        HapticFeedback.impact(.light)
+                        let hasSensitive = preset.types.contains(where: { $0.isSensitive })
+                        if hasSensitive {
+                            showSensitiveConfirmation = preset
+                        } else {
+                            applyPreset(preset)
+                        }
+                    } label: {
+                        Label(preset.displayName, systemImage: preset.iconSystemName)
                     }
-                } label: {
-                    Label(preset.displayName, systemImage: preset.iconSystemName)
                 }
-            }
-            Divider()
-            Button(role: .destructive) {
-                HapticFeedback.impact(.light)
-                appState.setEnabledTypes([])
-            } label: {
-                Label("Disable All", systemImage: "minus.circle")
             }
         } label: {
-            HStack {
-                Image(systemName: "wand.and.stars")
-                Text("Quick Presets")
-                Spacer()
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var searchField: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search types", text: $typeSearch)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-            if !typeSearch.isEmpty {
-                Button {
-                    typeSearch = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
+            Image(systemName: "wand.and.stars")
+                .accessibilityLabel("Quick Presets")
         }
     }
 
@@ -773,30 +840,9 @@ struct ContentView: View {
     }
 
     private var auditSection: some View {
+        // Audit log is now read-only. Revoke moved to the Connected Macs section
+        // where it belongs IA-wise (security action against the connected list).
         Section("Audit") {
-            Button(role: .destructive) {
-                HapticFeedback.notification(.warning)
-                showRevokeConfirmation = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "xmark.shield.fill")
-                    Text("Revoke All Pairings")
-                }
-            }
-            .liquidGlassButtonStyle(.standard)
-            .confirmationDialog(
-                "Revoke all pairings?",
-                isPresented: $showRevokeConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Revoke All", role: .destructive) {
-                    Task { await appState.revokeAllPairings() }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Paired Macs will lose access. They will need to scan a new QR code to reconnect. This cannot be undone.")
-            }
-
             if auditEvents.isEmpty {
                 ContentUnavailableView {
                     Label("No Events", systemImage: "list.bullet.clipboard")
@@ -866,14 +912,16 @@ struct ContentView: View {
     }
 
     /// Returns appropriate color for audit event type. Severity precedence:
-    /// security alerts (red) > revoke (red) > data access (orange) > auth (blue) > api (green).
+    /// security alerts (red) > revoke (red) > data access (orange) > auth (blue).
+    /// Generic api.* events use neutral secondary; only server-state changes
+    /// get colored to draw the eye to lifecycle events.
     private func auditEventColor(for eventType: String) -> Color {
         if eventType.hasPrefix("security.") { return .red }
         if eventType == "auth.revoke" || eventType == "api.request_invalid" { return .red }
+        if eventType == "api.server_start" || eventType == "api.server_stop" { return .green }
         switch eventType.split(separator: ".").first.map(String.init) ?? "" {
         case "data":     return .orange
         case "auth":     return .blue
-        case "api":      return .green
         default:         return .secondary
         }
     }

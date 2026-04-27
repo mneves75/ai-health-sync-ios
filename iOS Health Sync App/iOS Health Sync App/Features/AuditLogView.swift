@@ -161,10 +161,10 @@ enum AuditEventStyling {
     static func color(for eventType: String) -> Color {
         if eventType.hasPrefix("security.") { return .red }
         if eventType == "auth.revoke" || eventType == "api.request_invalid" { return .red }
+        if eventType == "api.server_start" || eventType == "api.server_stop" { return .green }
         switch eventType.split(separator: ".").first.map(String.init) ?? "" {
         case "data":     return .orange
         case "auth":     return .blue
-        case "api":      return .green
         default:         return .secondary
         }
     }

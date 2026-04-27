@@ -100,19 +100,6 @@ struct AboutView: View {
                 }
             }
 
-            // Thank You Section
-            Section {
-                VStack(spacing: 8) {
-                    Text("Thank You")
-                        .font(.headline)
-                    Text("Thank you for using AI Health Sync! Your privacy and data security are our top priorities.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-            }
         }
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
