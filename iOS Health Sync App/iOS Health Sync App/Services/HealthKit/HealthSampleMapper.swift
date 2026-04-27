@@ -124,6 +124,24 @@ struct HealthSampleMapper {
             return .gramUnit(with: .kilo)
         case .sleepAnalysis, .sleepInBed, .sleepAsleep, .sleepAwake, .sleepREM, .sleepCore, .sleepDeep, .workouts:
             return .count()
+        case .heartRateRecoveryOneMinute:
+            return .count().unitDivided(by: .minute())
+        case .bloodGlucose:
+            return HKUnit(from: "mg/dL")
+        case .peripheralPerfusionIndex:
+            return .percent()
+        case .distanceSwimming, .distanceDownhillSnowSports, .distanceWheelchair, .underwaterDepth:
+            return .meter()
+        case .swimmingStrokeCount, .pushCount, .numberOfTimesFallen, .numberOfAlcoholicBeverages:
+            return .count()
+        case .cyclingFunctionalThresholdPower:
+            return .watt()
+        case .waterTemperature:
+            return .degreeCelsius()
+        case .environmentalAudioExposure, .headphoneAudioExposure:
+            return HKUnit(from: "dBASPL")
+        case .irregularHeartRhythmEvent, .highHeartRateEvent, .lowHeartRateEvent:
+            return .count()
         }
     }
 

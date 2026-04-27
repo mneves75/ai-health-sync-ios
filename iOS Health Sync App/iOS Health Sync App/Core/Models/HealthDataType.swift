@@ -40,6 +40,40 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     case bodyFatPercentage
     case leanBodyMass
 
+    // Cardiac events
+    case irregularHeartRhythmEvent
+    case highHeartRateEvent
+    case lowHeartRateEvent
+    case heartRateRecoveryOneMinute
+
+    // Blood / metabolic
+    case bloodGlucose
+    case peripheralPerfusionIndex
+
+    // Swimming
+    case distanceSwimming
+    case swimmingStrokeCount
+
+    // Other sports / adaptive
+    case distanceDownhillSnowSports
+    case distanceWheelchair
+    case pushCount
+
+    // Cycling performance
+    case cyclingFunctionalThresholdPower
+
+    // Diving / water sports
+    case underwaterDepth
+    case waterTemperature
+
+    // Hearing
+    case environmentalAudioExposure
+    case headphoneAudioExposure
+
+    // Safety / lifestyle
+    case numberOfTimesFallen
+    case numberOfAlcoholicBeverages
+
     var id: String { rawValue }
 
     var displayName: String {
@@ -75,6 +109,24 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .bodyMassIndex: return "Body Mass Index"
         case .bodyFatPercentage: return "Body Fat %"
         case .leanBodyMass: return "Lean Body Mass"
+        case .irregularHeartRhythmEvent: return "Irregular Rhythm Event"
+        case .highHeartRateEvent: return "High Heart Rate Event"
+        case .lowHeartRateEvent: return "Low Heart Rate Event"
+        case .heartRateRecoveryOneMinute: return "HR Recovery (1 min)"
+        case .bloodGlucose: return "Blood Glucose"
+        case .peripheralPerfusionIndex: return "Peripheral Perfusion Index"
+        case .distanceSwimming: return "Swimming Distance"
+        case .swimmingStrokeCount: return "Swimming Stroke Count"
+        case .distanceDownhillSnowSports: return "Downhill Snow Sports Distance"
+        case .distanceWheelchair: return "Wheelchair Distance"
+        case .pushCount: return "Push Count"
+        case .cyclingFunctionalThresholdPower: return "Cycling FTP"
+        case .underwaterDepth: return "Underwater Depth"
+        case .waterTemperature: return "Water Temperature"
+        case .environmentalAudioExposure: return "Environmental Audio Exposure"
+        case .headphoneAudioExposure: return "Headphone Audio Exposure"
+        case .numberOfTimesFallen: return "Times Fallen"
+        case .numberOfAlcoholicBeverages: return "Alcoholic Beverages"
         }
     }
 
@@ -111,6 +163,24 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .bodyMassIndex: return HKObjectType.quantityType(forIdentifier: .bodyMassIndex)
         case .bodyFatPercentage: return HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)
         case .leanBodyMass: return HKObjectType.quantityType(forIdentifier: .leanBodyMass)
+        case .irregularHeartRhythmEvent: return HKObjectType.categoryType(forIdentifier: .irregularHeartRhythmEvent)
+        case .highHeartRateEvent: return HKObjectType.categoryType(forIdentifier: .highHeartRateEvent)
+        case .lowHeartRateEvent: return HKObjectType.categoryType(forIdentifier: .lowHeartRateEvent)
+        case .heartRateRecoveryOneMinute: return HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute)
+        case .bloodGlucose: return HKObjectType.quantityType(forIdentifier: .bloodGlucose)
+        case .peripheralPerfusionIndex: return HKObjectType.quantityType(forIdentifier: .peripheralPerfusionIndex)
+        case .distanceSwimming: return HKObjectType.quantityType(forIdentifier: .distanceSwimming)
+        case .swimmingStrokeCount: return HKObjectType.quantityType(forIdentifier: .swimmingStrokeCount)
+        case .distanceDownhillSnowSports: return HKObjectType.quantityType(forIdentifier: .distanceDownhillSnowSports)
+        case .distanceWheelchair: return HKObjectType.quantityType(forIdentifier: .distanceWheelchair)
+        case .pushCount: return HKObjectType.quantityType(forIdentifier: .pushCount)
+        case .cyclingFunctionalThresholdPower: return HKObjectType.quantityType(forIdentifier: .cyclingFunctionalThresholdPower)
+        case .underwaterDepth: return HKObjectType.quantityType(forIdentifier: .underwaterDepth)
+        case .waterTemperature: return HKObjectType.quantityType(forIdentifier: .waterTemperature)
+        case .environmentalAudioExposure: return HKObjectType.quantityType(forIdentifier: .environmentalAudioExposure)
+        case .headphoneAudioExposure: return HKObjectType.quantityType(forIdentifier: .headphoneAudioExposure)
+        case .numberOfTimesFallen: return HKObjectType.quantityType(forIdentifier: .numberOfTimesFallen)
+        case .numberOfAlcoholicBeverages: return HKObjectType.quantityType(forIdentifier: .numberOfAlcoholicBeverages)
         }
     }
 
