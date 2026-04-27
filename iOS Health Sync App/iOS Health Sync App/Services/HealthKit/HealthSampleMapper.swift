@@ -142,6 +142,27 @@ struct HealthSampleMapper {
             return HKUnit(from: "dBASPL")
         case .irregularHeartRhythmEvent, .highHeartRateEvent, .lowHeartRateEvent:
             return .count()
+        case .waistCircumference, .runningStrideLength, .runningVerticalOscillation, .walkingStepLength:
+            return .meter()
+        case .runningGroundContactTime:
+            return .second()
+        case .runningPower, .cyclingPower:
+            return .watt()
+        case .runningSpeed, .cyclingSpeed, .walkingSpeed, .stairAscentSpeed, .stairDescentSpeed:
+            return .meter().unitDivided(by: .second())
+        case .cyclingCadence:
+            return .count().unitDivided(by: .minute())
+        case .walkingAsymmetryPercentage, .walkingDoubleSupportPercentage, .atrialFibrillationBurden:
+            return .percent()
+        case .wristTemperature:
+            return .degreeCelsius()
+        case .timeInDaylight:
+            return .minute()
+        case .physicalEffort:
+            return HKUnit(from: "kcal/hr*kg")
+        case .mindfulMinutes:
+            // category type — routed via HKCategorySample path, not this function
+            return .minute()
         }
     }
 
