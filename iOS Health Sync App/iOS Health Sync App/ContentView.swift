@@ -90,11 +90,13 @@ struct ContentView: View {
         )
     }
 
-    @ViewBuilder
+    /// Builds the typed-error Alert with optional recovery action. NOT
+    /// `@ViewBuilder` — `Alert` is its own value type, not a `View`, so the
+    /// function must return it explicitly via `return` statements.
     private func errorAlert(for error: IdentifiableAppError) -> Alert {
         let recovery = error.appError.recovery
         if let recovery {
-            Alert(
+            return Alert(
                 title: Text(error.appError.title),
                 message: Text(error.appError.message),
                 primaryButton: .default(Text(recovery.label)) {
@@ -106,7 +108,7 @@ struct ContentView: View {
                 }
             )
         } else {
-            Alert(
+            return Alert(
                 title: Text(error.appError.title),
                 message: Text(error.appError.message),
                 dismissButton: .default(Text("OK")) {

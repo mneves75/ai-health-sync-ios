@@ -1,6 +1,7 @@
 // Copyright 2026 Marcus Neves
 // SPDX-License-Identifier: Apache-2.0
 
+import Foundation
 import SwiftData
 import Testing
 @testable import iOS_Health_Sync_App
