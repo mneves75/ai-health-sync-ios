@@ -551,32 +551,41 @@ struct HealthSyncCLI {
         let req = HealthDataRequest(startDate: startDate, endDate: endDate, types: types, limit: 10_000, offset: nil)
         let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
 
+        let isTruncated = response.hasMore
+        let isFailure = response.status != .ok || (isTruncated && !allowTruncated)
+
+        if let outputDir {
+            // Write everything — including failure manifests — atomically via a temp dir + rename.
+            let tmpDir = outputDir.appendingPathComponent(".tmp-\(UUID().uuidString)")
+            let runId = "\(ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-"))-\(UUID().uuidString.prefix(8))"
+            let finalDir = outputDir.appendingPathComponent(runId)
+            try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+            do {
+                try writeToDirectory(samples: response.samples, dir: tmpDir, format: outputFormat,
+                                     response: response, requestedTypes: types)
+                try FileManager.default.moveItem(at: tmpDir, to: finalDir)
+                fputs("Run directory: \(finalDir.path)\n", stderr)
+            } catch {
+                try? FileManager.default.removeItem(at: tmpDir)
+                throw error
+            }
+        } else {
+            switch outputFormat {
+            case .json: printJSON(response)
+            case .csv: printCSV(response.samples)
+            }
+        }
+
         if response.status != .ok {
             fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
             exit(1)
         }
-
-        if response.hasMore {
-            if allowTruncated {
-                fputs("warning: export truncated at \(response.samples.count) samples. Narrow the date range for complete data.\n", stderr)
-            } else {
-                fputs("error: export would be truncated at \(response.samples.count) samples. Narrow the date range or pass --allow-truncated.\n", stderr)
-                exit(1)
-            }
+        if isTruncated && !allowTruncated {
+            fputs("error: export truncated at \(response.samples.count) samples. Narrow the date range or pass --allow-truncated.\n", stderr)
+            exit(1)
         }
-
-        if let outputDir {
-            // Each run writes to a timestamped subdirectory to isolate runs and prevent stale-file mixing.
-            let runDir = outputDir.appendingPathComponent(ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-"))
-            try FileManager.default.createDirectory(at: runDir, withIntermediateDirectories: true)
-            try writeToDirectory(samples: response.samples, dir: runDir, format: outputFormat, response: response, requestedTypes: types)
-        } else {
-            switch outputFormat {
-            case .json:
-                printJSON(response)
-            case .csv:
-                printCSV(response.samples)
-            }
+        if isTruncated {
+            fputs("warning: export truncated at \(response.samples.count) samples.\n", stderr)
         }
     }
 
