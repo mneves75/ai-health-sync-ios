@@ -280,8 +280,12 @@ struct FITParser {
                 let lower = lastTimestamp & 0x1F
                 if timeOffset >= lower {
                     lastTimestamp = (lastTimestamp & ~0x1F) | timeOffset
-                } else {
+                } else if lastTimestamp != 0xFFFFFFFF {
+                    // Guard against the FIT invalid-value sentinel: advancing 0xFFFFFFE0 by 32
+                    // would overflow to 0x00000000, producing a corrupted epoch-0 timestamp.
                     lastTimestamp = ((lastTimestamp & ~0x1F) &+ 32) | timeOffset
+                } else {
+                    lastTimestamp = timeOffset
                 }
                 if let def = mesgDefs[localType] {
                     let rawFields = try readDataMessage(reader: reader, def: def)
