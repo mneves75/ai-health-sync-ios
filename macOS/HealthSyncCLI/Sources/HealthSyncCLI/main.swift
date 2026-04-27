@@ -642,41 +642,46 @@ struct HealthSyncCLI {
 
         fputs("Fetched \(response.routes.count) route(s)\n", stderr)
 
+        if response.workoutsTruncated || response.routePointsTruncated {
+            fputs("warning: \(response.message ?? "export truncated")\n", stderr)
+        }
+
         if let outputDir {
             try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
             for route in response.routes {
-                let gpx = makeGPX(route: route)
                 let fileName = "\(route.workoutId)-\(route.routeId).gpx"
                 let fileURL = outputDir.appendingPathComponent(fileName)
-                try gpx.write(to: fileURL, atomically: true, encoding: .utf8)
+                try makeGPX(routes: [route]).write(to: fileURL, atomically: true, encoding: .utf8)
                 fputs("Wrote \(route.points.count) points → \(fileName)\n", stderr)
             }
         } else {
-            // Print GPX to stdout (one per route, separated by a comment)
-            for route in response.routes {
-                print(makeGPX(route: route))
-            }
+            // All routes in one valid GPX document with multiple <trk> elements
+            print(makeGPX(routes: response.routes))
         }
     }
 
-    private static func makeGPX(route: WorkoutRoute) -> String {
+    private static func makeGPX(routes: [WorkoutRoute]) -> String {
         let df = ISO8601DateFormatter()
         df.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         var lines = [
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
             "<gpx version=\"1.1\" creator=\"healthsync\" xmlns=\"http://www.topografix.com/GPX/1/1\">",
-            "  <trk>",
-            "    <trkseg>",
         ]
-        for pt in route.points {
-            lines.append("      <trkpt lat=\"\(pt.latitude)\" lon=\"\(pt.longitude)\">")
-            lines.append("        <ele>\(pt.altitude)</ele>")
-            lines.append("        <time>\(df.string(from: pt.timestamp))</time>")
-            if let speed = pt.speed { lines.append("        <speed>\(speed)</speed>") }
-            if let course = pt.course { lines.append("        <course>\(course)</course>") }
-            lines.append("      </trkpt>")
+        for route in routes {
+            lines.append("  <trk>")
+            lines.append("    <name>\(route.workoutId)</name>")
+            lines.append("    <trkseg>")
+            for pt in route.points {
+                lines.append("      <trkpt lat=\"\(pt.latitude)\" lon=\"\(pt.longitude)\">")
+                lines.append("        <ele>\(pt.altitude)</ele>")
+                lines.append("        <time>\(df.string(from: pt.timestamp))</time>")
+                if let speed = pt.speed { lines.append("        <speed>\(speed)</speed>") }
+                if let course = pt.course { lines.append("        <course>\(course)</course>") }
+                lines.append("      </trkpt>")
+            }
+            lines += ["    </trkseg>", "  </trk>"]
         }
-        lines += ["    </trkseg>", "  </trk>", "</gpx>"]
+        lines.append("</gpx>")
         return lines.joined(separator: "\n")
     }
 }
@@ -1191,6 +1196,9 @@ struct RouteResponse: Codable {
     let status: HealthDataStatus
     let routes: [WorkoutRoute]
     let message: String?
+    var workoutsProcessed: Int = 0
+    var workoutsTruncated: Bool = false
+    var routePointsTruncated: Bool = false
 }
 
 struct StatusResponse: Codable {

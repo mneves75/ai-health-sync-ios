@@ -96,4 +96,7 @@ struct RouteResponse: Codable, Sendable {
     let status: HealthDataStatus
     let routes: [WorkoutRoute]
     let message: String?
+    var workoutsProcessed: Int = 0
+    var workoutsTruncated: Bool = false
+    var routePointsTruncated: Bool = false
 }
