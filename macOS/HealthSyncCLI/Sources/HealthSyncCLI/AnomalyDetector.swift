@@ -86,8 +86,7 @@ enum AnomalyInputError: Error, CustomStringConvertible {
 }
 
 /// Parse a CSV produced by `healthsync fetch --format csv`.
-/// Expected header: type, startDate, endDate, value, unit, sourceName, sourceVersion
-/// Falls back to any CSV with `type`, `startDate`, and `value` columns.
+/// The fetch command uses semicolons: id;type;value;unit;startDate;endDate;sourceName
 func parseAnomalyCSV(_ text: String) throws -> [(date: String, type: String, value: Double)] {
     let lines = text
         .components(separatedBy: .newlines)
@@ -96,7 +95,7 @@ func parseAnomalyCSV(_ text: String) throws -> [(date: String, type: String, val
 
     guard !lines.isEmpty else { throw AnomalyInputError.emptyFile }
 
-    let header = lines[0].lowercased().components(separatedBy: ",")
+    let header = lines[0].lowercased().components(separatedBy: ";")
 
     func colIndex(_ name: String) throws -> Int {
         guard let idx = header.firstIndex(of: name) else {
@@ -111,7 +110,7 @@ func parseAnomalyCSV(_ text: String) throws -> [(date: String, type: String, val
 
     var result: [(date: String, type: String, value: Double)] = []
     for (i, line) in lines.dropFirst().enumerated() {
-        let cols = line.components(separatedBy: ",")
+        let cols = line.components(separatedBy: ";")
         guard cols.count > max(typeIdx, dateIdx, valueIdx) else { continue }
         let typeStr  = cols[typeIdx].trimmingCharacters(in: .whitespaces)
         let dateStr  = String(cols[dateIdx].trimmingCharacters(in: .whitespaces).prefix(10))  // YYYY-MM-DD
