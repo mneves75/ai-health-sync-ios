@@ -104,7 +104,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    Text("**On by default:** activity, vitals, sleep, workouts, body, nutrition, hearing, mobility, lifestyle, symptoms.")
+                    Text("**On by default:** all standard categories (activity, vitals, sleep, workouts, body, nutrition, hearing, mobility, respiratory & metabolic, lifestyle, symptoms).")
                 }
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "lock.shield").foregroundStyle(.orange)

@@ -20,6 +20,8 @@ struct ContentView: View {
     )
     @State private var showSensitiveConfirmation: HealthDataType.Preset?
 
+    @Query private var pairedDevices: [PairedDevice]
+
     var body: some View {
         NavigationStack {
             List {
@@ -27,7 +29,6 @@ struct ContentView: View {
                     gettingStartedSection
                 }
                 statusSection
-                permissionsSection
                 serverSection
                 pairingSection
                 dataTypesSection
@@ -40,10 +41,19 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, newPhase in
             appState.handleScenePhaseChange(newPhase)
         }
+        // Single alert chain — typed errors take precedence over the legacy
+        // string error. The legacy alert only fires when there is no typed
+        // error pending so they cannot dismiss each other.
         .alert(item: typedErrorBinding) { error in
             errorAlert(for: error)
         }
-        .alert("Error", isPresented: Binding(get: { appState.lastError != nil }, set: { if !$0 { appState.lastError = nil } })) {
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { appState.lastTypedError == nil && appState.lastError != nil },
+                set: { if !$0 { appState.lastError = nil } }
+            )
+        ) {
             Button("OK") { appState.lastError = nil }
         } message: {
             Text(appState.lastError ?? "")
@@ -90,11 +100,14 @@ struct ContentView: View {
         return "\(version) (\(build))"
     }
 
-    /// Shows the Getting Started section until the user has paired at least one
-    /// Mac. After that they don't need the hand-holding.
+    /// Shows the Getting Started section until the user has paired at least
+    /// one Mac. After first successful pair we hide it permanently — toggling
+    /// the server off later should not bring the onboarding checklist back.
     private var shouldShowGettingStarted: Bool {
-        !appState.healthAuthorizationStatus || !appState.isServerRunning
+        pairedDevices.isEmpty
     }
+
+    private var hasPairedDevice: Bool { !pairedDevices.isEmpty }
 
     /// Step-by-step setup checklist for non-technical users. Each row reflects
     /// the actual state of the app and dims when complete.
@@ -116,7 +129,9 @@ struct ContentView: View {
                 title: "Start Sharing",
                 detail: "Turns on the connection so a Mac can fetch your data.",
                 isComplete: appState.isServerRunning,
-                isActionable: appState.healthAuthorizationStatus && !appState.isServerRunning
+                isActionable: appState.healthAuthorizationStatus
+                    && !appState.isServerRunning
+                    && !appState.isServerStarting
             ) {
                 HapticFeedback.impact(.medium)
                 Task { await appState.startServer() }
@@ -124,14 +139,16 @@ struct ContentView: View {
 
             stepRow(
                 number: 3,
-                title: "Connect Your Mac",
-                detail: "Install HealthSync CLI on your Mac (one command via Homebrew), then run \u{201C}healthsync scan\u{201D} to pair.",
-                isComplete: false,
-                isActionable: appState.isServerRunning,
-                actionLabel: "Show Pairing Instructions"
+                title: "Pair Your Mac",
+                detail: "Install HealthSync CLI on your Mac via Homebrew, then run \u{201C}healthsync scan\u{201D} to pair using the QR code below.",
+                isComplete: hasPairedDevice,
+                isActionable: appState.isServerRunning && !hasPairedDevice,
+                actionLabel: hasPairedDevice ? nil : "See QR Code Below"
             ) {
-                // Scroll to pairing section is implicit — the QR is already visible below.
-                // We could add ScrollViewReader here later if the section gets long.
+                // No-op: pairing happens on the Mac side. The QR section below
+                // is the visual target. Tapping the row gives haptic feedback
+                // so the user knows their tap registered while they look down.
+                HapticFeedback.selection()
             }
         } header: {
             HStack {
@@ -149,8 +166,11 @@ struct ContentView: View {
             } else if !appState.isServerRunning {
                 Text("Tap step 2 to turn on sharing.")
                     .font(.caption)
+            } else if !hasPairedDevice {
+                Text("On your Mac, run the HealthSync CLI to pair. Instructions below the QR code.")
+                    .font(.caption)
             } else {
-                Text("Now scan the QR code below with the HealthSync CLI on your Mac. Once paired, the Mac will pull your data on demand.")
+                Text("Setup complete. Your Mac is paired.")
                     .font(.caption)
             }
         }
@@ -160,6 +180,7 @@ struct ContentView: View {
         var done = 0
         if appState.healthAuthorizationStatus { done += 1 }
         if appState.isServerRunning { done += 1 }
+        if hasPairedDevice { done += 1 }
         return "\(done) of 3"
     }
 
@@ -213,8 +234,12 @@ struct ContentView: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
-        .disabled(!isActionable && !isComplete)
+        .disabled(!isActionable)
         .opacity(isComplete && !isActionable ? 0.7 : 1.0)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Step \(number) of 3: \(title)")
+        .accessibilityValue(isComplete ? "Completed" : (isActionable ? "Tap to start" : "Locked"))
+        .accessibilityHint(detail)
     }
 
     private var statusSection: some View {
@@ -228,55 +253,52 @@ struct ContentView: View {
         }
     }
 
-    /// Shows a friendlier HealthKit status that reflects actual access where
-    /// possible. iOS hides "denied" for read-only, so when authorization has
-    /// been requested but the probe found no data, surface a soft warning with
-    /// a Settings deep link rather than claiming "Requested" was a success.
+    /// Tri-state HealthKit status row. iOS hides read-only denial, so we
+    /// approximate via `healthDataProbeState` and show a "Checking…" state
+    /// while the probe is in flight to avoid a flash of the orange "Limited"
+    /// warning during the brief probe window.
     @ViewBuilder
     private var healthKitStatusRow: some View {
         if !appState.healthAuthorizationStatus {
             LabeledContent("Health Access", value: "Not yet requested")
-        } else if appState.hasAnyHealthData {
-            HStack {
-                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                Text("Health Access")
-                Spacer()
-                Text("Granted").foregroundStyle(.secondary)
-            }
         } else {
-            VStack(alignment: .leading, spacing: 6) {
+            switch appState.healthDataProbeState {
+            case .unknown, .probing:
                 HStack {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    Text("Health Access").foregroundStyle(.primary)
+                    ProgressView().controlSize(.small)
+                    Text("Health Access")
                     Spacer()
-                    Text("Limited").foregroundStyle(.orange)
+                    Text("Checking…").foregroundStyle(.secondary)
                 }
-                Text("HealthSync can't read any data. Open Settings → Privacy & Security → Health → HealthSync and enable the categories you want to share.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
+            case .granted:
+                HStack {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("Health Access")
+                    Spacer()
+                    Text("Granted").foregroundStyle(.secondary)
+                }
+            case .limited:
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        Text("Health Access").foregroundStyle(.primary)
+                        Spacer()
+                        Text("Limited").foregroundStyle(.orange)
                     }
+                    Text("HealthSync hasn't been able to read any data over the last 30 days. If you have data in Apple Health, open Settings → Privacy & Security → Health → HealthSync and enable the categories you want to share.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
                 }
-                .font(.caption.weight(.semibold))
             }
         }
     }
 
-    /// Hidden once the user has granted access. The Getting Started checklist
-    /// at the top of the screen handles the initial request. Re-requesting is
-    /// rarely needed, so we hide this row to reduce noise. Users can always
-    /// adjust permissions in Settings.app via the "Open Settings" button on
-    /// the Health Access row.
-    @ViewBuilder
-    private var permissionsSection: some View {
-        if !appState.healthAuthorizationStatus {
-            EmptyView()
-        } else {
-            EmptyView()
-        }
-    }
 
     private var serverSection: some View {
         Section {
@@ -489,21 +511,29 @@ struct ContentView: View {
                 }
 
                 // Pairing instructions for first-time users
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     Label("How to pair your Mac", systemImage: "info.circle")
-                        .font(.caption.weight(.semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("1. On your Mac, install the CLI:")
-                            .font(.caption)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("1. Open Terminal on your Mac and install the CLI:")
+                            .font(.footnote)
                         Text("brew install mneves75/tap/healthsync")
-                            .font(.caption2.monospaced())
-                            .padding(6)
-                            .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
-                        Text("2. Run \u{201C}healthsync scan\u{201D} and it will find this iPhone.")
-                            .font(.caption)
-                        Text("3. Keep this app open until pairing completes.")
-                            .font(.caption)
+                            .font(.footnote.monospaced())
+                            .textSelection(.enabled)
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                        Text("2. Tap \u{201C}Copy to Clipboard\u{201D} above on this iPhone, then run on your Mac:")
+                            .font(.footnote)
+                        Text("healthsync scan")
+                            .font(.footnote.monospaced())
+                            .textSelection(.enabled)
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                        Text("3. Keep this iPhone app open until pairing finishes (a few seconds).")
+                            .font(.footnote)
                     }
                     .foregroundStyle(.secondary)
                 }

@@ -34,10 +34,18 @@ final class AppState {
     /// is preserved for backward compat; new error sites should set `lastTypedError`
     /// instead so the UI can show a recovery action.
     var lastTypedError: AppError?
-    /// True after a probe query returns at least one sample. Used to detect the
-    /// "user requested but denied" state since iOS hides denial for read-only.
-    /// Set to false until a successful probe; remains false if the user denied.
-    var hasAnyHealthData: Bool = false
+    /// Tri-state probe result. iOS hides read-only HealthKit denial, so we
+    /// approximate by fetching the most-likely-available types and observing
+    /// whether ANY data comes back. The UI distinguishes the in-flight state
+    /// so it doesn't flash "Limited" while the probe is still running.
+    var healthDataProbeState: HealthDataProbeState = .unknown
+
+    enum HealthDataProbeState: Sendable {
+        case unknown    // Probe not yet attempted or pre-grant
+        case probing    // Probe in flight
+        case granted    // At least one sample returned across the probe set
+        case limited    // Probe returned nothing despite authorization being requested
+    }
     var protectedDataAvailable: Bool = true
     var healthAuthorizationStatus: Bool = false
 
@@ -167,20 +175,28 @@ final class AppState {
         }
     }
 
-    /// Probes whether HealthKit returned data for the most-likely-available type
-    /// (stepCount). Updates `hasAnyHealthData` so the UI can show a denial hint
-    /// without making false-positive claims.
-    private func probeHealthKitAccess() async {
+    /// Probes whether HealthKit returns ANY data across a fan-out of common
+    /// types over the last 30 days. Apple hides read-only denial, so a positive
+    /// probe is the only signal we have that access actually works. The window
+    /// is wide and the type set is broad to avoid false negatives on devices
+    /// that don't have step data (kids' iPhones, Health restored from backup
+    /// without samples yet, factory-reset devices).
+    func probeHealthKitAccess() async {
+        healthDataProbeState = .probing
         let endDate = Date()
-        let startDate = endDate.addingTimeInterval(-86_400)
+        let startDate = endDate.addingTimeInterval(-30 * 86_400)
+        let probeTypes: [HealthDataType] = [
+            .steps, .distanceWalkingRunning, .heartRate, .sleepAnalysis,
+            .activeEnergyBurned, .workouts
+        ]
         let response = await healthService.fetchSamples(
-            types: [.steps],
+            types: probeTypes,
             startDate: startDate,
             endDate: endDate,
             limit: 1,
             offset: 0
         )
-        hasAnyHealthData = !response.samples.isEmpty
+        healthDataProbeState = response.samples.isEmpty ? .limited : .granted
     }
 
     private var isRunningInSimulator: Bool {
@@ -208,17 +224,38 @@ final class AppState {
         }
     }
 
-    /// Replaces the entire enabled-types set in one update. Used by preset application.
+    /// Replaces the entire enabled-types set in one update. Used by preset
+    /// application. If the new set adds types that have not been authorized,
+    /// also requests authorization for them so the OS shows the dialog —
+    /// otherwise subsequent fetches would silently return empty samples for
+    /// the newly-enabled types.
     func setEnabledTypes(_ types: [HealthDataType]) {
+        let previous = Set(syncConfiguration.enabledTypes)
+        let newSet = Set(types)
+        let added = newSet.subtracting(previous)
+
         syncConfiguration.enabledTypes = types
         do {
             try modelContainer.mainContext.save()
         } catch {
             AppLoggers.app.error("Failed to save type set: \(error.localizedDescription, privacy: .public)")
         }
+
+        // Request authorization for newly-added types so the user sees the
+        // OS dialog, then re-probe to update the granted/limited classification.
+        if !added.isEmpty && healthAuthorizationStatus {
+            Task {
+                _ = try? await healthService.requestAuthorization(for: Array(added))
+                await probeHealthKitAccess()
+            }
+        }
     }
 
     func startServer() async {
+        // Re-entry guard: ignore concurrent calls. Without this, double-tapping
+        // the Getting Started step 2 row before SwiftUI propagates isServerStarting
+        // would call networkServer.start() twice.
+        guard !isServerStarting && !isServerRunning else { return }
         do {
             isServerStarting = true
             defer { isServerStarting = false }
@@ -351,5 +388,12 @@ final class AppState {
         // We can only check if we've REQUESTED authorization (user saw the dialog).
         // This is Apple's privacy design - apps can't know if health data access was denied.
         healthAuthorizationStatus = await healthService.hasRequestedAuthorization(for: syncConfiguration.enabledTypes)
+
+        // Re-probe so returning users (whose `healthDataProbeState` is `.unknown`
+        // by default) get an accurate Granted/Limited classification rather than
+        // a stale false-positive "Limited" warning.
+        if healthAuthorizationStatus {
+            await probeHealthKitAccess()
+        }
     }
 }
