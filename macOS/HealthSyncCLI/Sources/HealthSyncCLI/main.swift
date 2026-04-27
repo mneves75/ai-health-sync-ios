@@ -552,37 +552,53 @@ struct HealthSyncCLI {
         // Fetch complete results by splitting the date range into fixed windows.
         // Server offset-based pagination causes O(n²) HealthKit re-reads, so instead
         // we issue one request per time window and concatenate results.
+        var seenIDs = Set<UUID>()
         var allSamples: [HealthSampleDTO] = []
         var windowStart = startDate
         var anyTruncated = false
         var lastStatus: HealthDataStatus = .ok
         var lastMessage: String?
-        let windowSeconds = windowDays * 86_400
 
         while windowStart < endDate {
-            let windowEnd = min(windowStart.addingTimeInterval(windowSeconds), endDate)
-            let req = HealthDataRequest(startDate: windowStart, endDate: windowEnd, types: types, limit: 10_000, offset: nil)
-            let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
-            lastStatus = response.status
-            lastMessage = response.message
-
-            if response.status != .ok {
-                fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
-                exit(1)
-            }
-            if response.hasMore {
-                anyTruncated = true
-                if !allowTruncated {
-                    fputs("error: window \(windowStart)...\(windowEnd) has >10,000 samples. Narrow the date range or pass --allow-truncated.\n", stderr)
+            // Adaptive window: start at windowDays, halve on truncation up to 5 times.
+            var currentWindowSecs = windowDays * 86_400
+            var windowEnd = min(windowStart.addingTimeInterval(currentWindowSecs), endDate)
+            var response: HealthDataResponse
+            var attempts = 0
+            repeat {
+                let req = HealthDataRequest(startDate: windowStart, endDate: windowEnd, types: types, limit: 10_000, offset: nil)
+                response = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
+                if response.status != .ok {
+                    fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
                     exit(1)
                 }
+                if response.hasMore && !allowTruncated && attempts < 5 {
+                    // Shrink the window and retry
+                    currentWindowSecs /= 2
+                    windowEnd = min(windowStart.addingTimeInterval(currentWindowSecs), endDate)
+                    attempts += 1
+                } else {
+                    break
+                }
+            } while true
+            lastStatus = response.status
+            lastMessage = response.message
+            if response.hasMore { anyTruncated = true }
+            // Deduplicate by UUID to handle half-open boundary semantics
+            for s in response.samples where seenIDs.insert(s.id).inserted {
+                allSamples.append(s)
             }
-            allSamples.append(contentsOf: response.samples)
-            windowStart = windowEnd
+            // Advance by 1 second past windowEnd to make the next window half-open
+            windowStart = windowEnd.addingTimeInterval(1)
         }
 
         if anyTruncated {
-            fputs("warning: one or more 30-day windows were truncated. Narrow the date range for complete data.\n", stderr)
+            if allowTruncated {
+                fputs("warning: some windows still exceeded 10,000 samples after shrinking. Export may be incomplete.\n", stderr)
+            } else {
+                fputs("error: export could not be completed after adaptive window shrinking.\n", stderr)
+                exit(1)
+            }
         }
 
         // Build a synthetic response for downstream writers
