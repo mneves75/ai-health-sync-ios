@@ -671,9 +671,9 @@ struct HealthSyncCLI {
                                 totalSamples: response.samples.count, message: response.message,
                                 requestedTypes: requestedTypes.map(\.rawValue))
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let data = try? encoder.encode(manifest), let str = String(data: data, encoding: .utf8) {
-            try str.write(to: manifestURL, atomically: true, encoding: .utf8)
-        }
+        let data = try encoder.encode(manifest)
+        let str = String(decoding: data, as: UTF8.self)
+        try str.write(to: manifestURL, atomically: true, encoding: .utf8)
         fputs("Manifest → \(manifestURL.lastPathComponent)\n", stderr)
     }
 
