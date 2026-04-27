@@ -700,6 +700,13 @@ extension HealthSyncCLI {
         let body = ECGRequest(startDate: startDate, endDate: endDate)
         let response: ECGResponse = try await client.send(path: "/api/v1/health/ecg", method: "POST", body: body, authorized: true)
 
+        if response.status != "ok" {
+            let msg = response.message ?? response.status
+            fputs("Error: \(msg)\n", stderr)
+            if response.status == "locked" { fputs("Unlock your iPhone and try again.\n", stderr) }
+            exit(1)
+        }
+
         if response.truncated {
             fputs("Warning: result was truncated — narrow your date range for complete data.\n", stderr)
         }
@@ -756,6 +763,13 @@ extension HealthSyncCLI {
 
         let body = HRVSeriesRequest(startDate: startDate, endDate: endDate)
         let response: HRVSeriesResponse = try await client.send(path: "/api/v1/health/hrv-series", method: "POST", body: body, authorized: true)
+
+        if response.status != "ok" {
+            let msg = response.message ?? response.status
+            fputs("Error: \(msg)\n", stderr)
+            if response.status == "locked" { fputs("Unlock your iPhone and try again.\n", stderr) }
+            exit(1)
+        }
 
         if response.truncated {
             fputs("Warning: result was truncated — narrow your date range for complete data.\n", stderr)
