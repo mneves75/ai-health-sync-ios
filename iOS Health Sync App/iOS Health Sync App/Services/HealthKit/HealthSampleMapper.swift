@@ -57,7 +57,6 @@ struct HealthSampleMapper {
             var metadata: [String: String] = [
                 "activityType": workout.workoutActivityType.name,
                 "durationSeconds": String(format: "%.0f", workout.duration),
-                "sourceApp": workout.sourceRevision.source.bundleIdentifier
             ]
             if let energy = activeEnergyKilocalories(for: workout) {
                 metadata["totalEnergyKilocalories"] = String(format: "%.2f", energy)

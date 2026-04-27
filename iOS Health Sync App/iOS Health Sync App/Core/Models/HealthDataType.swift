@@ -202,6 +202,8 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     /// Existing stored configurations are unaffected — deserialization only returns
     /// types present in the saved CSV, so new types never appear in existing installs.
     static var defaultEnabledTypes: [HealthDataType] {
+        // Only the baseline set shipped before new types were introduced.
+        // All newly added types require explicit user opt-in via settings.
         [
             .steps, .distanceWalkingRunning, .distanceCycling,
             .activeEnergyBurned, .basalEnergyBurned,
@@ -213,14 +215,6 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
             .bloodOxygen, .respiratoryRate, .vo2Max,
             .sleepAnalysis, .sleepCore, .sleepDeep, .sleepREM, .sleepAwake,
             .weight, .height, .bodyMassIndex, .bodyFatPercentage, .leanBodyMass,
-            .runningSpeed, .runningStrideLength, .runningGroundContactTime,
-            .runningVerticalOscillation, .runningPower,
-            .cyclingCadence, .cyclingPower, .cyclingSpeed,
-            .walkingSpeed, .walkingStepLength,
-            .walkingAsymmetryPercentage, .walkingDoubleSupportPercentage,
-            .timeInDaylight, .mindfulMinutes,
         ]
-        // Excluded from default: wristTemperature, atrialFibrillationBurden,
-        // physicalEffort, waistCircumference — require explicit user opt-in.
     }
 }

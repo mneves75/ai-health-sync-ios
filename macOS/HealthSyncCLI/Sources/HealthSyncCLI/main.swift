@@ -483,10 +483,11 @@ struct HealthSyncCLI {
         let shortFingerprint = config.fingerprint.isEmpty ? "Unknown" : "SHA256:\(config.fingerprint.prefix(12))..."
 
         // Count data types (include unknown values from newer server versions)
-        let typeCount = response.enabledTypesWire.allDisplayStrings.count
+        let knownCount = response.enabledTypes.count
         let unknownCount = response.enabledTypesWire.unknownRaw.count
-        var typesSummary = typeCount == 1 ? "1 data type" : "\(typeCount) data types"
-        if unknownCount > 0 { typesSummary += " (\(unknownCount) unknown — update CLI)" }
+        let totalCount = knownCount + unknownCount
+        var typesSummary = totalCount == 1 ? "1 data type" : "\(totalCount) data types"
+        if unknownCount > 0 { typesSummary += " (\(unknownCount) not fetchable — update CLI)" }
 
         print("📡 Connection Status: \(statusIcon) \(statusText)")
         print("📱 Device: \(response.deviceName)")
@@ -507,10 +508,10 @@ struct HealthSyncCLI {
         let (config, token) = try ConfigStore.load()
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
         let response: TypesResponse = try await client.send(path: "/api/v1/health/types", method: "GET", body: EmptyBody(), authorized: true)
-        let allTypes = response.enabledTypesWire.allDisplayStrings
-        print(allTypes.joined(separator: ", "))
+        let knownTypes = response.enabledTypes.map(\.rawValue)
+        print(knownTypes.joined(separator: ", "))
         if !response.enabledTypesWire.unknownRaw.isEmpty {
-            fputs("warning: \(response.enabledTypesWire.unknownRaw.count) unknown type(s) from server — update healthsync CLI\n", stderr)
+            fputs("warning: server advertises \(response.enabledTypesWire.unknownRaw.count) type(s) not supported by this CLI version (not fetchable): \(response.enabledTypesWire.unknownRaw.joined(separator: ", "))\nRun `brew upgrade healthsync` to enable them.\n", stderr)
         }
     }
 
