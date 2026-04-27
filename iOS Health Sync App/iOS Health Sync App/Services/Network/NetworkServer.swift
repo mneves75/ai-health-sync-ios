@@ -18,6 +18,7 @@ actor NetworkServer {
     private let identityProvider: @Sendable () throws -> TLSIdentity
 
     private var listener: NWListener?
+    private var pendingListener: NWListener?
     private(set) var port: Int = 0
     private(set) var certificateFingerprint: String = ""
     private var startInProgress = false
@@ -64,7 +65,19 @@ actor NetworkServer {
 
         startInProgress = true
         stopRequestedDuringStart = false
-        var startupResult: Result<Void, Error> = .success(())
+        var startupError: Error?
+
+        defer {
+            pendingListener = nil
+            let waiters = startWaiters
+            startWaiters.removeAll()
+            startInProgress = false
+            if let e = startupError {
+                for w in waiters { w.resume(throwing: e) }
+            } else {
+                for w in waiters { w.resume() }
+            }
+        }
 
         do {
             let identity = try identityProvider()
@@ -87,6 +100,9 @@ actor NetworkServer {
                 Task { await self.handleConnection(connection) }
             }
 
+            // Publish before awaiting so stop() can cancel the listener immediately
+            self.pendingListener = listener
+
             try await awaitReady(listener, queue: .global())
             if stopRequestedDuringStart {
                 listener.cancel()
@@ -102,28 +118,18 @@ actor NetworkServer {
             self.listener = listener
             self.port = Int(port.rawValue)
         } catch {
-            startupResult = .failure(error)
+            startupError = error
         }
 
-        let waiters = startWaiters
-        startWaiters.removeAll()
-        startInProgress = false
-
-        switch startupResult {
-        case .success:
-            for waiter in waiters {
-                waiter.resume()
-            }
-        case .failure(let error):
-            for waiter in waiters {
-                waiter.resume(throwing: error)
-            }
-            throw error
+        if let e = startupError {
+            throw e
         }
     }
 
     func stop() {
         stopRequestedDuringStart = true
+        pendingListener?.cancel()
+        pendingListener = nil
         listener?.cancel()
         listener = nil
         port = 0
