@@ -544,42 +544,40 @@ struct HealthSyncCLI {
         let (config, token) = try ConfigStore.load()
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
 
-        // Fetch all pages automatically
-        var allSamples: [HealthSampleDTO] = []
-        var offset = 0
-        let pageSize = 1000
-        repeat {
-            var req = HealthDataRequest(startDate: startDate, endDate: endDate, types: types)
-            req = HealthDataRequest(startDate: startDate, endDate: endDate, types: types, limit: pageSize, offset: offset)
-            let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
-            allSamples.append(contentsOf: response.samples)
-            if !response.hasMore { break }
-            offset += response.returnedCount
-        } while true
+        // Single request at max server limit — server-side offset causes O(n²) re-reads
+        // so multi-page loops are intentionally avoided until a cursor API exists.
+        let req = HealthDataRequest(startDate: startDate, endDate: endDate, types: types, limit: 10_000, offset: nil)
+        let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
+
+        if response.hasMore {
+            fputs("warning: export is truncated at 10,000 samples. Narrow the date range to get all data.\n", stderr)
+        }
 
         if let outputDir {
             try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
-            try writeToDirectory(samples: allSamples, dir: outputDir, format: outputFormat)
+            try writeToDirectory(samples: response.samples, dir: outputDir, format: outputFormat, response: response)
         } else {
             switch outputFormat {
             case .json:
-                printJSON(allSamples)
+                printJSON(response)
             case .csv:
-                printCSV(allSamples, to: nil)
+                printCSV(response.samples)
             }
         }
     }
 
     enum OutputFormat { case json, csv }
 
-    private static func writeToDirectory(samples: [HealthSampleDTO], dir: URL, format: OutputFormat) throws {
-        let grouped = Dictionary(grouping: samples) { $0.type }
+    private static func writeToDirectory(samples: [HealthSampleDTO], dir: URL, format: OutputFormat, response: HealthDataResponse) throws {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime]
+        // Only write files for known types — reject server-controlled strings as filenames.
+        let knownTypeNames = Set(HealthDataType.allCases.map(\.rawValue))
+        let grouped = Dictionary(grouping: samples.filter { knownTypeNames.contains($0.type) }) { $0.type }
 
         for (typeName, typeSamples) in grouped {
-            let fileName = "\(typeName).\(format == .csv ? "csv" : "json")"
-            let fileURL = dir.appendingPathComponent(fileName)
+            let ext = format == .csv ? "csv" : "json"
+            let fileURL = dir.appendingPathComponent("\(typeName).\(ext)")
             let content: String
             if format == .csv {
                 if typeName == HealthDataType.workouts.rawValue {
@@ -591,7 +589,12 @@ struct HealthSyncCLI {
                 content = jsonContent(typeSamples)
             }
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            fputs("Wrote \(typeSamples.count) \(typeName) samples to \(fileURL.path)\n", stderr)
+            fputs("Wrote \(typeSamples.count) \(typeName) samples → \(fileURL.path)\n", stderr)
+        }
+
+        let unknown = samples.filter { !knownTypeNames.contains($0.type) }
+        if !unknown.isEmpty {
+            fputs("warning: \(unknown.count) samples with unknown types were skipped. Update healthsync CLI.\n", stderr)
         }
     }
 
@@ -631,11 +634,25 @@ struct HealthSyncCLI {
         return str
     }
 
-    private static func printJSON(_ samples: [HealthSampleDTO]) {
-        print(jsonContent(samples))
+    private static func printJSON(_ response: HealthDataResponse) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        struct Envelope: Encodable {
+            let status: String
+            let count: Int
+            let hasMore: Bool
+            let message: String?
+            let samples: [HealthSampleDTO]
+        }
+        let env = Envelope(status: response.status.rawValue, count: response.samples.count,
+                           hasMore: response.hasMore, message: response.message, samples: response.samples)
+        if let data = try? encoder.encode(env), let str = String(data: data, encoding: .utf8) {
+            print(str)
+        }
     }
 
-    private static func printCSV(_ samples: [HealthSampleDTO], to _: Void?) {
+    private static func printCSV(_ samples: [HealthSampleDTO]) {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime]
         print(csvContent(samples, dateFormatter: dateFormatter), terminator: "")
