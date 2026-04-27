@@ -50,7 +50,9 @@ jobs:
         run: |
           TAG_VERSION="${{ steps.version.outputs.VERSION }}"
           CLI_VERSION=$(grep -E '^let cliVersion\s*=' "$CLI_PATH/Sources/HealthSyncCLI/main.swift" | sed 's/.*"\(.*\)"/\1/')
-          MARKETING_VERSION=$(grep -m1 'MARKETING_VERSION' "iOS Health Sync App/iOS Health Sync App.xcodeproj/project.pbxproj" | sed 's/.*= \(.*\);/\1/' | tr -d ' ')
+          # Use awk to extract MARKETING_VERSION from the Release config block specifically,
+          # since project.pbxproj has one entry per build config (Debug and Release).
+          MARKETING_VERSION=$(awk '/name = Release/,/\};/' "iOS Health Sync App/iOS Health Sync App.xcodeproj/project.pbxproj" | grep -m1 'MARKETING_VERSION' | sed 's/.*= \(.*\);/\1/' | tr -d ' ')
           CHANGELOG_VERSION=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/.*\[\(.*\)\].*/\1/')
 
           echo "Tag version:         $TAG_VERSION"
@@ -59,16 +61,26 @@ jobs:
           echo "Changelog version:   $CHANGELOG_VERSION"
 
           FAIL=0
-          if [[ "$CLI_VERSION" != "$TAG_VERSION" ]]; then
+          if [[ -z "$CLI_VERSION" ]]; then
+            echo "ERROR: could not parse cliVersion from main.swift — check grep pattern"
+            FAIL=1
+          elif [[ "$CLI_VERSION" != "$TAG_VERSION" ]]; then
             echo "ERROR: tag $TAG_VERSION != cliVersion $CLI_VERSION in main.swift"
             FAIL=1
           fi
-          if [[ "$MARKETING_VERSION" != "$TAG_VERSION" ]]; then
+          if [[ -z "$MARKETING_VERSION" ]]; then
+            echo "ERROR: could not parse MARKETING_VERSION from project.pbxproj"
+            FAIL=1
+          elif [[ "$MARKETING_VERSION" != "$TAG_VERSION" ]]; then
             echo "ERROR: tag $TAG_VERSION != MARKETING_VERSION $MARKETING_VERSION in project.pbxproj"
             FAIL=1
           fi
           if [[ "$CHANGELOG_VERSION" != "$TAG_VERSION" ]]; then
             echo "ERROR: tag $TAG_VERSION != changelog entry $CHANGELOG_VERSION"
+            FAIL=1
+          fi
+          if grep -q 'REPLACE_WITH_REAL_PHONE_NUMBER' appstore/metadata/review_information/phone_number.txt 2>/dev/null; then
+            echo "ERROR: App Store review phone number is still a placeholder"
             FAIL=1
           fi
           if [[ $FAIL -eq 1 ]]; then
