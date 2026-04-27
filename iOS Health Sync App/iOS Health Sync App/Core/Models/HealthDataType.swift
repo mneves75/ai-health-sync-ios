@@ -39,6 +39,36 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     case bodyMassIndex
     case bodyFatPercentage
     case leanBodyMass
+    case waistCircumference
+
+    // Running dynamics (Apple Watch Series 8+ / paired pods)
+    case runningGroundContactTime
+    case runningStrideLength
+    case runningVerticalOscillation
+    case runningPower
+    case runningSpeed
+
+    // Cycling
+    case cyclingCadence
+    case cyclingPower
+    case cyclingSpeed
+
+    // Walking detail
+    case walkingSpeed
+    case walkingStepLength
+    case walkingAsymmetryPercentage
+    case walkingDoubleSupportPercentage
+    case stairAscentSpeed
+    case stairDescentSpeed
+
+    // Apple Watch exclusives
+    case wristTemperature
+    case atrialFibrillationBurden
+
+    // Wellness
+    case timeInDaylight
+    case physicalEffort
+    case mindfulMinutes
 
     var id: String { rawValue }
 
@@ -75,6 +105,26 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .bodyMassIndex: return "Body Mass Index"
         case .bodyFatPercentage: return "Body Fat %"
         case .leanBodyMass: return "Lean Body Mass"
+        case .waistCircumference: return "Waist Circumference"
+        case .runningGroundContactTime: return "Running Ground Contact Time"
+        case .runningStrideLength: return "Running Stride Length"
+        case .runningVerticalOscillation: return "Running Vertical Oscillation"
+        case .runningPower: return "Running Power"
+        case .runningSpeed: return "Running Speed"
+        case .cyclingCadence: return "Cycling Cadence"
+        case .cyclingPower: return "Cycling Power"
+        case .cyclingSpeed: return "Cycling Speed"
+        case .walkingSpeed: return "Walking Speed"
+        case .walkingStepLength: return "Walking Step Length"
+        case .walkingAsymmetryPercentage: return "Walking Asymmetry %"
+        case .walkingDoubleSupportPercentage: return "Walking Double Support %"
+        case .stairAscentSpeed: return "Stair Ascent Speed"
+        case .stairDescentSpeed: return "Stair Descent Speed"
+        case .wristTemperature: return "Wrist Temperature"
+        case .atrialFibrillationBurden: return "AFib Burden"
+        case .timeInDaylight: return "Time in Daylight"
+        case .physicalEffort: return "Physical Effort"
+        case .mindfulMinutes: return "Mindful Minutes"
         }
     }
 
@@ -111,6 +161,26 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .bodyMassIndex: return HKObjectType.quantityType(forIdentifier: .bodyMassIndex)
         case .bodyFatPercentage: return HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)
         case .leanBodyMass: return HKObjectType.quantityType(forIdentifier: .leanBodyMass)
+        case .waistCircumference: return HKObjectType.quantityType(forIdentifier: .waistCircumference)
+        case .runningGroundContactTime: return HKObjectType.quantityType(forIdentifier: .runningGroundContactTime)
+        case .runningStrideLength: return HKObjectType.quantityType(forIdentifier: .runningStrideLength)
+        case .runningVerticalOscillation: return HKObjectType.quantityType(forIdentifier: .runningVerticalOscillation)
+        case .runningPower: return HKObjectType.quantityType(forIdentifier: .runningPower)
+        case .runningSpeed: return HKObjectType.quantityType(forIdentifier: .runningSpeed)
+        case .cyclingCadence: return HKObjectType.quantityType(forIdentifier: .cyclingCadence)
+        case .cyclingPower: return HKObjectType.quantityType(forIdentifier: .cyclingPower)
+        case .cyclingSpeed: return HKObjectType.quantityType(forIdentifier: .cyclingSpeed)
+        case .walkingSpeed: return HKObjectType.quantityType(forIdentifier: .walkingSpeed)
+        case .walkingStepLength: return HKObjectType.quantityType(forIdentifier: .walkingStepLength)
+        case .walkingAsymmetryPercentage: return HKObjectType.quantityType(forIdentifier: .walkingAsymmetryPercentage)
+        case .walkingDoubleSupportPercentage: return HKObjectType.quantityType(forIdentifier: .walkingDoubleSupportPercentage)
+        case .stairAscentSpeed: return HKObjectType.quantityType(forIdentifier: .stairAscentSpeed)
+        case .stairDescentSpeed: return HKObjectType.quantityType(forIdentifier: .stairDescentSpeed)
+        case .wristTemperature: return HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
+        case .atrialFibrillationBurden: return HKObjectType.quantityType(forIdentifier: .atrialFibrillationBurden)
+        case .timeInDaylight: return HKObjectType.quantityType(forIdentifier: .timeInDaylight)
+        case .physicalEffort: return HKObjectType.quantityType(forIdentifier: .physicalEffort)
+        case .mindfulMinutes: return HKObjectType.categoryType(forIdentifier: .mindfulSession)
         }
     }
 
@@ -121,5 +191,9 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         default:
             return false
         }
+    }
+
+    var isCategoryType: Bool {
+        isCategorySleepType || self == .mindfulMinutes
     }
 }
