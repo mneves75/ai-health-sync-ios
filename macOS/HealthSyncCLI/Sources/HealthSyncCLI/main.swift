@@ -1251,4 +1251,132 @@ enum HealthDataType: String, CaseIterable, Codable {
     // Safety / lifestyle
     case numberOfTimesFallen
     case numberOfAlcoholicBeverages
+
+    // Nutrition
+    case dietaryEnergyConsumed
+    case dietaryWater
+    case dietaryCaffeine
+    case dietaryProtein
+    case dietaryFatTotal
+    case dietaryFatSaturated
+    case dietaryFatPolyunsaturated
+    case dietaryFatMonounsaturated
+    case dietaryCholesterol
+    case dietaryCarbohydrates
+    case dietaryFiber
+    case dietarySugar
+    case dietarySodium
+    case dietaryCalcium
+    case dietaryIron
+    case dietaryMagnesium
+    case dietaryPotassium
+    case dietaryZinc
+    case dietaryPhosphorus
+    case dietaryIodine
+    case dietarySelenium
+    case dietaryCopper
+    case dietaryManganese
+    case dietaryChromium
+    case dietaryMolybdenum
+    case dietaryChloride
+    case dietaryVitaminA
+    case dietaryVitaminB6
+    case dietaryVitaminB12
+    case dietaryVitaminC
+    case dietaryVitaminD
+    case dietaryVitaminE
+    case dietaryVitaminK
+    case dietaryRiboflavin
+    case dietaryThiamin
+    case dietaryNiacin
+    case dietaryFolate
+    case dietaryBiotin
+    case dietaryPantothenicAcid
+
+    // Symptoms
+    case abdominalCramps
+    case acne
+    case appetiteChanges
+    case bladderIncontinence
+    case bloating
+    case breastPain
+    case chestTightnessOrPain
+    case chills
+    case constipation
+    case coughing
+    case diarrhea
+    case dizziness
+    case drySkin
+    case fainting
+    case fatigue
+    case fever
+    case generalizedBodyAche
+    case hairLoss
+    case headache
+    case heartburn
+    case hotFlashes
+    case lossOfSmell
+    case lossOfTaste
+    case lowerBackPain
+    case memoryLapse
+    case moodChanges
+    case nausea
+    case nightSweats
+    case pelvicPain
+    case rapidPoundingOrFlutteringHeartbeat
+    case runnyNose
+    case shortnessOfBreath
+    case sinusCongestion
+    case skippedHeartbeat
+    case sleepChanges
+    case soreThroat
+    case vaginalDryness
+    case vomiting
+    case wheezing
+
+    // Reproductive health
+    case menstrualFlow
+    case intermenstrualBleeding
+    case infrequentMenstrualCycles
+    case irregularMenstrualCycles
+    case persistentIntermenstrualBleeding
+    case prolongedMenstrualPeriods
+    case ovulationTestResult
+    case pregnancyTestResult
+    case progesteroneTestResult
+    case sexualActivity
+    case cervicalMucusQuality
+    case contraceptive
+    case lactation
+    case bleedingAfterPregnancy
+    case bleedingDuringPregnancy
+
+    // Lifestyle / hygiene events
+    case handwashingEvent
+    case toothbrushingEvent
+
+    // Audio events
+    case environmentalAudioExposureEvent
+    case headphoneAudioExposureEvent
+
+    // Cardio fitness / mobility events
+    case lowCardioFitnessEvent
+    case appleWalkingSteadinessEvent
+    case appleStandHour
+
+    // Vital signs / spirometry / mobility
+    case basalBodyTemperature
+    case bloodAlcoholContent
+    case electrodermalActivity
+    case environmentalSoundReduction
+    case forcedExpiratoryVolume1
+    case forcedVitalCapacity
+    case peakExpiratoryFlowRate
+    case inhalerUsage
+    case insulinDelivery
+    case nikeFuel
+    case sixMinuteWalkTestDistance
+    case appleWalkingSteadiness
+    case uvExposure
+    case appleMoveTime
 }
