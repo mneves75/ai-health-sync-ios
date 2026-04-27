@@ -52,7 +52,7 @@ appstore/
 - [ ] Hospedar `pages/support.html` (ex: GitHub Pages)
 - [ ] Atualizar URLs em `metadata/default/` se o local de hospedagem for diferente
 - [ ] Produzir screenshots (ver `screenshots/README.md`)
-- [ ] Criar registro no App Store Connect com bundle ID `org.mvneves.healthsync`
+- [ ] Criar registro no App Store Connect com bundle ID `org.mvneves.iosappsynchealthappdata.iOS-Health-Sync-App`
 
 ### Validação de Conteúdo
 
