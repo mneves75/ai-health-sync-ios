@@ -82,6 +82,8 @@ struct HealthSyncCLI {
             try await types(args: args)
         case "fetch":
             try await fetch(args: args)
+        case "suunto":
+            try await suunto(args: args)
         default:
             try usage()
         }
@@ -120,6 +122,10 @@ struct HealthSyncCLI {
           status [--dry-run]               Fetch server status
           types [--dry-run]                Fetch enabled data types
           fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--dry-run]  (default: csv)
+          suunto auth                      Authorize with Suunto Sports Tracker API (OAuth2 PKCE)
+          suunto logout                    Remove stored Suunto tokens
+          suunto workouts --start <iso> --end <iso> [--format csv|json]
+                                      Fetch workouts from Suunto API
           version, --version, -v           Show version information
 
         QUICK START:
@@ -878,6 +884,82 @@ private final class ServiceResolutionState: @unchecked Sendable {
         let cont = _continuation
         lock.unlock()
         cont?.resume(returning: nil)
+    }
+}
+
+// MARK: - Suunto command
+
+extension HealthSyncCLI {
+    static func suunto(args: [String]) async throws {
+        guard let subcommand = args.first else {
+            fputs("""
+            Usage: healthsync suunto <subcommand>
+              auth          Authorize with Suunto (requires SUUNTO_CLIENT_ID, SUUNTO_CLIENT_SECRET)
+              logout        Remove stored tokens
+              workouts      Fetch workouts from Suunto API
+            """, stderr)
+            fputs("\n", stderr)
+            exit(1)
+        }
+        switch subcommand {
+        case "auth":    try await suuntoAuth()
+        case "logout":  suuntoLogout()
+        case "workouts":try await suuntoWorkouts(args: Array(args.dropFirst()))
+        default:
+            fputs("Unknown suunto subcommand '\(subcommand)'. Run 'healthsync suunto' for help.\n", stderr)
+            exit(1)
+        }
+    }
+
+    static func suuntoAuth() async throws {
+        let flow   = try SuuntoOAuthFlow()
+        let tokens = try await flow.authorize()
+        try suuntoSaveTokens(tokens)
+        let expiry = ISO8601DateFormatter().string(from: tokens.expiresAt)
+        print("Authenticated with Suunto. Token expires: \(expiry)")
+    }
+
+    static func suuntoLogout() {
+        suuntoDeleteTokens()
+        print("Suunto tokens removed.")
+    }
+
+    static func suuntoWorkouts(args: [String]) async throws {
+        let options = try parseOptions(args)
+        let format  = options["--format"] ?? "csv"
+
+        guard let startStr = options["--start"], let endStr = options["--end"] else {
+            fputs("Usage: healthsync suunto workouts --start <iso> --end <iso> [--format csv|json]\n", stderr)
+            exit(1)
+        }
+        guard format == "csv" || format == "json" else {
+            fputs("Error: --format must be csv or json\n", stderr)
+            exit(1)
+        }
+
+        let iso = ISO8601DateFormatter()
+        guard let start = iso.date(from: startStr) else {
+            fputs("Error: --start must be ISO8601, e.g. 2026-01-01T00:00:00Z\n", stderr)
+            exit(1)
+        }
+        guard let end = iso.date(from: endStr) else {
+            fputs("Error: --end must be ISO8601, e.g. 2026-12-31T23:59:59Z\n", stderr)
+            exit(1)
+        }
+        guard start < end else {
+            fputs("Error: --start must be before --end\n", stderr)
+            exit(1)
+        }
+
+        let token    = try await suuntoAccessToken()
+        let workouts = try await suuntoFetchWorkouts(startDate: start, endDate: end, accessToken: token)
+        fputs("Fetched \(workouts.count) workout(s)\n", stderr)
+
+        if format == "json" {
+            try printSuuntoWorkoutsJSON(workouts)
+        } else {
+            printSuuntoWorkoutsCSV(workouts)
+        }
     }
 }
 
