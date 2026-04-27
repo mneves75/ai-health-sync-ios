@@ -24,19 +24,23 @@ struct TrainingLoadModel {
     static let atlDays: Double = 7
     static let ctlDays: Double = 42
 
-    /// Compute ATL/CTL/TSB from an ordered array of daily TSS values (oldest first).
+    /// Compute ATL/CTL/TSB from daily TSS values.
+    /// Rows are sorted and date gaps are filled with TSS=0 so the EWA decay
+    /// is correct even when rest days are missing from the input.
     static func compute(from dailyTSS: [DailyTSS]) -> [TrainingLoadEntry] {
+        let filled = fillGaps(dailyTSS.sorted { $0.date < $1.date })
+
         var atl: Double = 0
         var ctl: Double = 0
         var entries: [TrainingLoadEntry] = []
-        entries.reserveCapacity(dailyTSS.count)
+        entries.reserveCapacity(filled.count)
 
         let atlDecay  = 1.0 - 1.0 / atlDays
         let ctlDecay  = 1.0 - 1.0 / ctlDays
         let atlFactor = 1.0 / atlDays
         let ctlFactor = 1.0 / ctlDays
 
-        for day in dailyTSS {
+        for day in filled {
             atl = atl * atlDecay + day.tss * atlFactor
             ctl = ctl * ctlDecay + day.tss * ctlFactor
             entries.append(TrainingLoadEntry(
@@ -49,6 +53,29 @@ struct TrainingLoadModel {
         }
 
         return entries
+    }
+
+    /// Insert TSS=0 entries for any calendar day missing between first and last input date.
+    private static func fillGaps(_ sorted: [DailyTSS]) -> [DailyTSS] {
+        guard sorted.count >= 2 else { return sorted }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.timeZone   = TimeZone(identifier: "UTC")
+        guard let first = fmt.date(from: sorted.first!.date),
+              let last  = fmt.date(from: sorted.last!.date) else { return sorted }
+
+        var byDate: [String: Double] = [:]
+        for d in sorted { byDate[d.date] = d.tss }
+
+        var result: [DailyTSS] = []
+        var current = first
+        let cal = Calendar(identifier: .gregorian)
+        while current <= last {
+            let key = fmt.string(from: current)
+            result.append(DailyTSS(date: key, tss: byDate[key] ?? 0))
+            current = cal.date(byAdding: .day, value: 1, to: current)!
+        }
+        return result
     }
 }
 
