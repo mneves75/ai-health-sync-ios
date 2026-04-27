@@ -10,6 +10,8 @@
 		829EC355C65512A119A55B04 /* HealthKitServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E704AEA35314C91E7E7D7F39 /* HealthKitServiceTests.swift */; };
 		9F1B8C2E5C3D4A6B7C8D9E0F /* NetworkServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9012345 /* NetworkServerTests.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DEREncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978899A0B1C2 /* DEREncoderTests.swift */; };
+		B5C6D7E8F9012345A1B2C3D4 /* HealthDataTypeDefaultsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D6E7F8A9B0C1D2E3F4A5B6 /* HealthDataTypeDefaultsTests.swift */; };
+		B6D7E8F9012345A1B2C3D4E5 /* PairingServiceRevokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D7E8F9A0B1C2D3E4F5A6B7 /* PairingServiceRevokeTests.swift */; };
 		E942FC38CBA1FE8D92BA26C5 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E783B0113212E3B6B6587A3 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +29,8 @@
 		1E783B0113212E3B6B6587A3 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		311B1A1F80A6B1D593176020 /* HealthSyncTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthSyncTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		536C47C22F0DD26E0004A22A /* iOS Health Sync App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS Health Sync App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5D6E7F8A9B0C1D2E3F4A5B6 /* HealthDataTypeDefaultsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataTypeDefaultsTests.swift; sourceTree = "<group>"; };
+		C6D7E8F9A0B1C2D3E4F5A6B7 /* PairingServiceRevokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingServiceRevokeTests.swift; sourceTree = "<group>"; };
 		D1E2F3A4B5C6D7E8F9012345 /* NetworkServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServerTests.swift; sourceTree = "<group>"; };
 		E704AEA35314C91E7E7D7F39 /* HealthKitServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitServiceTests.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A6978899A0B1C2 /* DEREncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DEREncoderTests.swift; sourceTree = "<group>"; };
@@ -90,8 +94,10 @@
 			isa = PBXGroup;
 			children = (
 				F1E2D3C4B5A6978899A0B1C2 /* DEREncoderTests.swift */,
+				C5D6E7F8A9B0C1D2E3F4A5B6 /* HealthDataTypeDefaultsTests.swift */,
 				E704AEA35314C91E7E7D7F39 /* HealthKitServiceTests.swift */,
 				D1E2F3A4B5C6D7E8F9012345 /* NetworkServerTests.swift */,
+				C6D7E8F9A0B1C2D3E4F5A6B7 /* PairingServiceRevokeTests.swift */,
 			);
 			path = "iOS Health Sync AppTests";
 			sourceTree = "<group>";
@@ -208,8 +214,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* DEREncoderTests.swift in Sources */,
+				B5C6D7E8F9012345A1B2C3D4 /* HealthDataTypeDefaultsTests.swift in Sources */,
 				829EC355C65512A119A55B04 /* HealthKitServiceTests.swift in Sources */,
 				9F1B8C2E5C3D4A6B7C8D9E0F /* NetworkServerTests.swift in Sources */,
+				B6D7E8F9012345A1B2C3D4E5 /* PairingServiceRevokeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
