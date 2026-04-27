@@ -349,7 +349,7 @@ actor NetworkServer {
             } catch {
                 AppLoggers.network.error("Failed to load enabled types: \(error.localizedDescription, privacy: .public)")
             }
-            return HealthDataType.allCases
+            return HealthDataType.defaultEnabledTypes
         }
     }
 
