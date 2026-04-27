@@ -239,7 +239,7 @@ actor NetworkServer {
             let enabled = try await loadEnabledTypes()
             let response = StatusResponse(
                 status: "ok",
-                version: "1",
+                version: "1.1",
                 deviceName: await deviceNameProvider(),
                 enabledTypes: enabled,
                 serverTime: Date()

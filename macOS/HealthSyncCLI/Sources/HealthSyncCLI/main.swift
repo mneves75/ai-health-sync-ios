@@ -33,7 +33,8 @@ enum CLIError: Error {
 // MARK: - Version Information
 
 /// CLI version following semantic versioning (SemVer)
-let cliVersion = "1.0.1"
+let cliVersion = "1.1.0"
+let supportedServerVersions: Set<String> = ["1", "1.1"]
 
 /// Build metadata
 let cliBuildDate = "2026-02-19"
@@ -497,6 +498,9 @@ struct HealthSyncCLI {
 
         // Show version info
         print("📦 Version: \(response.version)")
+        if !supportedServerVersions.contains(response.version) {
+            fputs("warning: server protocol v\(response.version) is not supported by this CLI (supports: \(supportedServerVersions.sorted().joined(separator: ", "))). Update healthsync.\n", stderr)
+        }
     }
 
     static func types(args: [String]) async throws {

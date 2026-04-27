@@ -175,6 +175,13 @@ final class AppState {
         } catch {
             AppLoggers.app.error("Failed to save type toggle: \(error.localizedDescription, privacy: .public)")
         }
+        if enabled {
+            Task {
+                // Re-request HealthKit authorization so newly enabled types
+                // are queryable immediately rather than returning empty results.
+                _ = try? await healthService.requestAuthorization(for: types)
+            }
+        }
     }
 
     func startServer() async {
