@@ -703,7 +703,7 @@ extension HealthSyncCLI {
         if response.status != "ok" {
             let msg = response.message ?? response.status
             fputs("Error: \(msg)\n", stderr)
-            if response.status == "locked" { fputs("Unlock your iPhone and try again.\n", stderr) }
+            if response.status == "locked" { fputs("Ensure your Apple Watch is nearby and unlocked, then try again.\n", stderr) }
             exit(1)
         }
 
@@ -767,7 +767,7 @@ extension HealthSyncCLI {
         if response.status != "ok" {
             let msg = response.message ?? response.status
             fputs("Error: \(msg)\n", stderr)
-            if response.status == "locked" { fputs("Unlock your iPhone and try again.\n", stderr) }
+            if response.status == "locked" { fputs("Ensure your Apple Watch is nearby and unlocked, then try again.\n", stderr) }
             exit(1)
         }
 
