@@ -33,14 +33,50 @@ struct ContentView: View {
             }
             .listStyle(.insetGrouped)
             .navigationTitle("HealthSync")
-            .onChange(of: scenePhase) { _, newPhase in
-                appState.handleScenePhaseChange(newPhase)
-            }
-            .alert("Error", isPresented: Binding(get: { appState.lastError != nil }, set: { if !$0 { appState.lastError = nil } })) {
-                Button("OK") { appState.lastError = nil }
-            } message: {
-                Text(appState.lastError ?? "")
-            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            appState.handleScenePhaseChange(newPhase)
+        }
+        .alert(item: typedErrorBinding) { error in
+            errorAlert(for: error)
+        }
+        .alert("Error", isPresented: Binding(get: { appState.lastError != nil }, set: { if !$0 { appState.lastError = nil } })) {
+            Button("OK") { appState.lastError = nil }
+        } message: {
+            Text(appState.lastError ?? "")
+        }
+    }
+
+    private var typedErrorBinding: Binding<IdentifiableAppError?> {
+        Binding(
+            get: { appState.lastTypedError.map(IdentifiableAppError.init) },
+            set: { if $0 == nil { appState.lastTypedError = nil } }
+        )
+    }
+
+    @ViewBuilder
+    private func errorAlert(for error: IdentifiableAppError) -> Alert {
+        let recovery = error.appError.recovery
+        if let recovery {
+            Alert(
+                title: Text(error.appError.title),
+                message: Text(error.appError.message),
+                primaryButton: .default(Text(recovery.label)) {
+                    AppErrorRecoveryRunner.run(recovery)
+                    appState.lastTypedError = nil
+                },
+                secondaryButton: .cancel(Text("Cancel")) {
+                    appState.lastTypedError = nil
+                }
+            )
+        } else {
+            Alert(
+                title: Text(error.appError.title),
+                message: Text(error.appError.message),
+                dismissButton: .default(Text("OK")) {
+                    appState.lastTypedError = nil
+                }
+            )
         }
     }
 

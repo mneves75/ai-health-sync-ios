@@ -30,6 +30,14 @@ final class AppState {
     var serverPort: Int = 0
     var serverFingerprint: String = ""
     var lastError: String?
+    /// Structured error for the new typed alert UI. The plain-string `lastError`
+    /// is preserved for backward compat; new error sites should set `lastTypedError`
+    /// instead so the UI can show a recovery action.
+    var lastTypedError: AppError?
+    /// True after a probe query returns at least one sample. Used to detect the
+    /// "user requested but denied" state since iOS hides denial for read-only.
+    /// Set to false until a successful probe; remains false if the user denied.
+    var hasAnyHealthData: Bool = false
     var protectedDataAvailable: Bool = true
     var healthAuthorizationStatus: Bool = false
 
@@ -129,7 +137,7 @@ final class AppState {
         do {
             guard await healthService.isAvailable() else {
                 healthAuthorizationStatus = false
-                lastError = "Health data is unavailable on this device."
+                lastTypedError = .healthKitUnavailable()
                 await auditService.record(eventType: "auth.healthkit", details: ["status": "unavailable"])
                 return
             }
@@ -140,16 +148,39 @@ final class AppState {
             // NOTE: For READ-only permissions, Apple hides whether user granted or denied.
             // requestAuthorization returns true if the dialog was shown successfully,
             // NOT whether the user approved. We can only know the dialog was presented.
-            // Use hasRequestedAuthorization to verify the dialog was shown.
             healthAuthorizationStatus = await healthService.hasRequestedAuthorization(for: syncConfiguration.enabledTypes)
 
             await auditService.record(eventType: "auth.healthkit", details: [
                 "dialogShown": String(dialogShown),
                 "requested": String(healthAuthorizationStatus)
             ])
+
+            // Probe whether the user actually granted any access. We can't see
+            // "denied" status directly (Apple hides it), but a probe fetch of the
+            // most always-available type (stepCount over the last 24h) tells us
+            // whether ANY data is reachable. Zero results combined with "requested"
+            // status strongly suggests the user denied — surface a soft warning
+            // with a link to Settings so they can fix it.
+            await probeHealthKitAccess()
         } catch {
-            lastError = "HealthKit authorization failed: \(error.localizedDescription)"
+            lastTypedError = .healthKitAuthFailed(error)
         }
+    }
+
+    /// Probes whether HealthKit returned data for the most-likely-available type
+    /// (stepCount). Updates `hasAnyHealthData` so the UI can show a denial hint
+    /// without making false-positive claims.
+    private func probeHealthKitAccess() async {
+        let endDate = Date()
+        let startDate = endDate.addingTimeInterval(-86_400)
+        let response = await healthService.fetchSamples(
+            types: [.steps],
+            startDate: startDate,
+            endDate: endDate,
+            limit: 1,
+            offset: 0
+        )
+        hasAnyHealthData = !response.samples.isEmpty
     }
 
     private var isRunningInSimulator: Bool {
@@ -213,7 +244,7 @@ final class AppState {
             UIApplication.shared.isIdleTimerDisabled = true
         } catch {
             isServerStarting = false
-            lastError = "Failed to start server: \(error.localizedDescription)"
+            lastTypedError = .fromServerStart(error)
             AppLoggers.app.error("Server start failed: \(error.localizedDescription, privacy: .public)")
         }
     }
