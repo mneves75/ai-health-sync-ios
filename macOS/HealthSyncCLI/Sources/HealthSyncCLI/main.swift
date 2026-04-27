@@ -82,6 +82,8 @@ struct HealthSyncCLI {
             try await types(args: args)
         case "fetch":
             try await fetch(args: args)
+        case "import":
+            try importFIT(args: args)
         default:
             try usage()
         }
@@ -120,6 +122,7 @@ struct HealthSyncCLI {
           status [--dry-run]               Fetch server status
           types [--dry-run]                Fetch enabled data types
           fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--dry-run]  (default: csv)
+          import --fit <file.fit> [--format csv|json] [--output-dir <dir>]
           version, --version, -v           Show version information
 
         QUICK START:
@@ -605,6 +608,314 @@ struct HealthSyncCLI {
             let escapedSource = sample.sourceName.replacingOccurrences(of: ";", with: "\\;")
             print("\(sample.id);\(sample.type);\(sample.value);\(sample.unit);\(startDateStr);\(endDateStr);\(escapedSource)")
         }
+    }
+}
+
+// MARK: - FIT Import Command (with Garmin-specific fields)
+
+extension HealthSyncCLI {
+    static func importFIT(args: [String]) throws {
+        let options = try parseOptions(args)
+        guard let fitPath = options["--fit"] else {
+            throw CLIError.invalidArguments("Usage: healthsync import --fit <file.fit> [--format csv|json] [--output-dir <dir>]")
+        }
+
+        let format = options["--format"] ?? "csv"
+        let outputDir = options["--output-dir"]
+
+        let fitURL = URL(fileURLWithPath: fitPath)
+        guard FileManager.default.fileExists(atPath: fitURL.path) else {
+            throw CLIError.invalidArguments("File not found: \(fitPath)")
+        }
+
+        let fitFile = try FITParser(contentsOf: fitURL).parse()
+        let isGarmin = fitFile.fileId.flatMap { $0.manufacturer }.map { $0 == 1 } ?? false
+
+        if let outputDir {
+            try writeFITToDirectory(fitFile: fitFile, fitPath: fitPath, outputDir: outputDir, format: format, isGarmin: isGarmin)
+        } else {
+            printFITSummary(fitFile: fitFile, format: format, isGarmin: isGarmin)
+        }
+    }
+
+    private static func writeFITToDirectory(fitFile: FITFile, fitPath: String, outputDir: String, format: String, isGarmin: Bool) throws {
+        let runId = UUID().uuidString
+        let tmpDir = URL(fileURLWithPath: outputDir).appendingPathComponent(".\(runId).tmp", isDirectory: true)
+        let finalDir = URL(fileURLWithPath: outputDir).appendingPathComponent(runId, isDirectory: true)
+        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        do {
+            let ext = format == "json" ? "json" : "csv"
+            if format == "json" {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                encoder.dateEncodingStrategy = .iso8601
+                try encoder.encode(fitFile.sessions.map { FITSessionJSON($0) })
+                    .write(to: tmpDir.appendingPathComponent("sessions.json"))
+                try encoder.encode(fitFile.laps.map { FITLapJSON($0) })
+                    .write(to: tmpDir.appendingPathComponent("laps.json"))
+                try encoder.encode(fitFile.records.map { FITRecordJSON($0) })
+                    .write(to: tmpDir.appendingPathComponent("records.json"))
+                if let hrv = fitFile.garminHRV {
+                    try encoder.encode(GarminHRVJSON(hrv))
+                        .write(to: tmpDir.appendingPathComponent("garmin_hrv.json"))
+                }
+            } else {
+                try fitSessionsCSV(fitFile.sessions, garmin: isGarmin)
+                    .write(to: tmpDir.appendingPathComponent("sessions.csv"), atomically: false, encoding: .utf8)
+                try fitLapsCSV(fitFile.laps)
+                    .write(to: tmpDir.appendingPathComponent("laps.csv"), atomically: false, encoding: .utf8)
+                try fitRecordsCSV(fitFile.records, garmin: isGarmin)
+                    .write(to: tmpDir.appendingPathComponent("records.csv"), atomically: false, encoding: .utf8)
+                if let hrv = fitFile.garminHRV {
+                    try fitHRVCSV(hrv)
+                        .write(to: tmpDir.appendingPathComponent("garmin_hrv.csv"), atomically: false, encoding: .utf8)
+                }
+            }
+            let manifest = """
+            {
+              "source": "\(fitPath.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))",
+              "manufacturer": \(fitFile.fileId?.manufacturer.map { String($0) } ?? "null"),
+              "isGarmin": \(isGarmin),
+              "sessions": \(fitFile.sessions.count),
+              "laps": \(fitFile.laps.count),
+              "records": \(fitFile.records.count),
+              "garminHRVIntervals": \(fitFile.garminHRV?.rrIntervalsSeconds.count ?? 0),
+              "format": "\(ext)"
+            }
+            """
+            try manifest.write(to: tmpDir.appendingPathComponent("manifest.json"), atomically: false, encoding: .utf8)
+            try FileManager.default.moveItem(at: tmpDir, to: finalDir)
+            print(finalDir.path)
+        } catch {
+            try? FileManager.default.removeItem(at: tmpDir)
+            throw error
+        }
+    }
+
+    private static func printFITSummary(fitFile: FITFile, format: String, isGarmin: Bool) {
+        if format == "json" {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            struct Out: Encodable {
+                let isGarmin: Bool
+                let sessions: [FITSessionJSON]
+                let laps: [FITLapJSON]
+                let records: [FITRecordJSON]
+                let garminHRV: GarminHRVJSON?
+            }
+            if let data = try? encoder.encode(Out(
+                isGarmin: isGarmin,
+                sessions: fitFile.sessions.map { FITSessionJSON($0) },
+                laps: fitFile.laps.map { FITLapJSON($0) },
+                records: fitFile.records.map { FITRecordJSON($0) },
+                garminHRV: fitFile.garminHRV.map { GarminHRVJSON($0) }
+            )), let str = String(data: data, encoding: .utf8) {
+                print(str)
+            }
+        } else {
+            if isGarmin { print("# Garmin device detected") }
+            print("=== Sessions (\(fitFile.sessions.count)) ===")
+            print(fitSessionsCSV(fitFile.sessions, garmin: isGarmin))
+            if !fitFile.laps.isEmpty {
+                print("\n=== Laps (\(fitFile.laps.count)) ===")
+                print(fitLapsCSV(fitFile.laps))
+            }
+            print("\n=== Records (\(fitFile.records.count)) ===")
+            print(fitRecordsCSV(fitFile.records, garmin: isGarmin))
+            if let hrv = fitFile.garminHRV {
+                print("\n=== Garmin HRV (\(hrv.rrIntervalsSeconds.count) intervals) ===")
+                print(fitHRVCSV(hrv))
+            }
+        }
+    }
+
+    private static let fitDateFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime]; return f
+    }()
+
+    private static func fitSessionsCSV(_ sessions: [FITSession], garmin: Bool) -> String {
+        var header = "sport;startTime;totalElapsedSec;totalDistanceM;totalCalories;avgSpeedMps;maxSpeedMps;avgHR;maxHR;avgCadence;avgPowerW;totalAscent;totalDescent"
+        if garmin { header += ";tss;if;perfCondition;thresholdPowerW;avgVOmm;avgSTms;avgStepLenMm" }
+        var lines = [header]
+        for s in sessions {
+            var row = [
+                s.sport.map { String($0) } ?? "",
+                s.startTime.map { fitDateFormatter.string(from: $0) } ?? "",
+                s.totalElapsedSeconds.map { String(format: "%.1f", $0) } ?? "",
+                s.totalDistanceMeters.map { String(format: "%.1f", $0) } ?? "",
+                s.totalCalories.map { String($0) } ?? "",
+                s.avgSpeedMetersPerSec.map { String(format: "%.3f", $0) } ?? "",
+                s.maxSpeedMetersPerSec.map { String(format: "%.3f", $0) } ?? "",
+                s.avgHeartRateBPM.map { String($0) } ?? "",
+                s.maxHeartRateBPM.map { String($0) } ?? "",
+                s.avgCadenceRPM.map { String($0) } ?? "",
+                s.avgPowerWatts.map { String($0) } ?? "",
+                s.totalAscent.map { String($0) } ?? "",
+                s.totalDescent.map { String($0) } ?? ""
+            ]
+            if garmin {
+                row += [
+                    s.garminTrainingStressScore.map { String(format: "%.1f", $0) } ?? "",
+                    s.garminIntensityFactor.map { String(format: "%.3f", $0) } ?? "",
+                    s.garminPerformanceCondition.map { String($0) } ?? "",
+                    s.garminThresholdPower.map { String($0) } ?? "",
+                    s.garminAvgVerticalOscillationMm.map { String(format: "%.1f", $0) } ?? "",
+                    s.garminAvgStanceTimeMs.map { String(format: "%.1f", $0) } ?? "",
+                    s.garminAvgStepLengthMm.map { String(format: "%.0f", $0) } ?? ""
+                ]
+            }
+            lines.append(row.joined(separator: ";"))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func fitLapsCSV(_ laps: [FITLap]) -> String {
+        var lines = ["startTime;totalElapsedSec;totalDistanceM;totalCalories;avgSpeedMps;avgHR;maxHR;totalAscent;totalDescent"]
+        for l in laps {
+            lines.append([
+                l.startTime.map { fitDateFormatter.string(from: $0) } ?? "",
+                l.totalElapsedSeconds.map { String(format: "%.1f", $0) } ?? "",
+                l.totalDistanceMeters.map { String(format: "%.1f", $0) } ?? "",
+                l.totalCalories.map { String($0) } ?? "",
+                l.avgSpeedMetersPerSec.map { String(format: "%.3f", $0) } ?? "",
+                l.avgHeartRateBPM.map { String($0) } ?? "",
+                l.maxHeartRateBPM.map { String($0) } ?? "",
+                l.totalAscent.map { String($0) } ?? "",
+                l.totalDescent.map { String($0) } ?? ""
+            ].joined(separator: ";"))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func fitRecordsCSV(_ records: [FITRecord], garmin: Bool) -> String {
+        var header = "timestamp;lat;lon;altM;hrBPM;cadRPM;speedMps;powerW;tempC;distM"
+        if garmin { header += ";voMm;stPct;stMs;vrPct;stBalPct;stepLenMm" }
+        var lines = [header]
+        for r in records {
+            var row = [
+                fitDateFormatter.string(from: r.timestamp),
+                r.positionLatDegrees.map { String(format: "%.6f", $0) } ?? "",
+                r.positionLonDegrees.map { String(format: "%.6f", $0) } ?? "",
+                r.altitudeMeters.map { String(format: "%.1f", $0) } ?? "",
+                r.heartRateBPM.map { String($0) } ?? "",
+                r.cadenceRPM.map { String($0) } ?? "",
+                r.speedMetersPerSec.map { String(format: "%.3f", $0) } ?? "",
+                r.powerWatts.map { String($0) } ?? "",
+                r.temperatureCelsius.map { String($0) } ?? "",
+                r.distanceMeters.map { String(format: "%.1f", $0) } ?? ""
+            ]
+            if garmin {
+                row += [
+                    r.garminVerticalOscillationMm.map { String(format: "%.1f", $0) } ?? "",
+                    r.garminStanceTimePercent.map { String(format: "%.1f", $0) } ?? "",
+                    r.garminStanceTimeMs.map { String(format: "%.1f", $0) } ?? "",
+                    r.garminVerticalRatio.map { String(format: "%.1f", $0) } ?? "",
+                    r.garminStanceTimeBalancePercent.map { String(format: "%.1f", $0) } ?? "",
+                    r.garminStepLengthMm.map { String($0) } ?? ""
+                ]
+            }
+            lines.append(row.joined(separator: ";"))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func fitHRVCSV(_ hrv: GarminHRVData) -> String {
+        var lines = ["rrIntervalSeconds"]
+        for rr in hrv.rrIntervalsSeconds {
+            lines.append(String(format: "%.4f", rr))
+        }
+        lines.append("# SDNN=\(hrv.sdnnMilliseconds.map { String(format: "%.2f", $0) } ?? "n/a") ms")
+        lines.append("# RMSSD=\(hrv.rmssdMilliseconds.map { String(format: "%.2f", $0) } ?? "n/a") ms")
+        return lines.joined(separator: "\n")
+    }
+}
+
+// MARK: - FIT JSON Codable wrappers
+
+private struct FITSessionJSON: Encodable {
+    let sport: UInt8?; let subSport: UInt8?; let startTime: Date?
+    let totalElapsedSeconds: Double?; let totalTimerSeconds: Double?
+    let totalDistanceMeters: Double?; let totalCalories: UInt16?
+    let avgSpeedMetersPerSec: Double?; let maxSpeedMetersPerSec: Double?
+    let avgHeartRateBPM: UInt8?; let maxHeartRateBPM: UInt8?
+    let avgCadenceRPM: UInt8?; let maxCadenceRPM: UInt8?
+    let avgPowerWatts: UInt16?; let maxPowerWatts: UInt16?
+    let totalAscent: UInt16?; let totalDescent: UInt16?
+    let garminTrainingStressScore: Double?; let garminIntensityFactor: Double?
+    let garminPerformanceCondition: Int8?; let garminThresholdPower: UInt16?
+    let garminAvgVerticalOscillationMm: Double?; let garminAvgStanceTimeMs: Double?
+    let garminAvgStepLengthMm: Double?
+
+    init(_ s: FITSession) {
+        sport = s.sport; subSport = s.subSport; startTime = s.startTime
+        totalElapsedSeconds = s.totalElapsedSeconds; totalTimerSeconds = s.totalTimerSeconds
+        totalDistanceMeters = s.totalDistanceMeters; totalCalories = s.totalCalories
+        avgSpeedMetersPerSec = s.avgSpeedMetersPerSec; maxSpeedMetersPerSec = s.maxSpeedMetersPerSec
+        avgHeartRateBPM = s.avgHeartRateBPM; maxHeartRateBPM = s.maxHeartRateBPM
+        avgCadenceRPM = s.avgCadenceRPM; maxCadenceRPM = s.maxCadenceRPM
+        avgPowerWatts = s.avgPowerWatts; maxPowerWatts = s.maxPowerWatts
+        totalAscent = s.totalAscent; totalDescent = s.totalDescent
+        garminTrainingStressScore = s.garminTrainingStressScore
+        garminIntensityFactor = s.garminIntensityFactor
+        garminPerformanceCondition = s.garminPerformanceCondition
+        garminThresholdPower = s.garminThresholdPower
+        garminAvgVerticalOscillationMm = s.garminAvgVerticalOscillationMm
+        garminAvgStanceTimeMs = s.garminAvgStanceTimeMs
+        garminAvgStepLengthMm = s.garminAvgStepLengthMm
+    }
+}
+
+private struct FITLapJSON: Encodable {
+    let startTime: Date?; let totalElapsedSeconds: Double?; let totalTimerSeconds: Double?
+    let totalDistanceMeters: Double?; let totalCalories: UInt16?
+    let avgSpeedMetersPerSec: Double?; let maxSpeedMetersPerSec: Double?
+    let avgHeartRateBPM: UInt8?; let maxHeartRateBPM: UInt8?
+    let totalAscent: UInt16?; let totalDescent: UInt16?
+
+    init(_ l: FITLap) {
+        startTime = l.startTime; totalElapsedSeconds = l.totalElapsedSeconds
+        totalTimerSeconds = l.totalTimerSeconds; totalDistanceMeters = l.totalDistanceMeters
+        totalCalories = l.totalCalories; avgSpeedMetersPerSec = l.avgSpeedMetersPerSec
+        maxSpeedMetersPerSec = l.maxSpeedMetersPerSec; avgHeartRateBPM = l.avgHeartRateBPM
+        maxHeartRateBPM = l.maxHeartRateBPM; totalAscent = l.totalAscent; totalDescent = l.totalDescent
+    }
+}
+
+private struct FITRecordJSON: Encodable {
+    let timestamp: Date; let positionLatDegrees: Double?; let positionLonDegrees: Double?
+    let altitudeMeters: Double?; let heartRateBPM: UInt8?; let cadenceRPM: UInt8?
+    let speedMetersPerSec: Double?; let powerWatts: UInt16?; let temperatureCelsius: Int8?
+    let distanceMeters: Double?
+    let garminVerticalOscillationMm: Double?; let garminStanceTimePercent: Double?
+    let garminStanceTimeMs: Double?; let garminVerticalRatio: Double?
+    let garminStanceTimeBalancePercent: Double?; let garminStepLengthMm: UInt16?
+
+    init(_ r: FITRecord) {
+        timestamp = r.timestamp; positionLatDegrees = r.positionLatDegrees
+        positionLonDegrees = r.positionLonDegrees; altitudeMeters = r.altitudeMeters
+        heartRateBPM = r.heartRateBPM; cadenceRPM = r.cadenceRPM
+        speedMetersPerSec = r.speedMetersPerSec; powerWatts = r.powerWatts
+        temperatureCelsius = r.temperatureCelsius; distanceMeters = r.distanceMeters
+        garminVerticalOscillationMm = r.garminVerticalOscillationMm
+        garminStanceTimePercent = r.garminStanceTimePercent
+        garminStanceTimeMs = r.garminStanceTimeMs; garminVerticalRatio = r.garminVerticalRatio
+        garminStanceTimeBalancePercent = r.garminStanceTimeBalancePercent
+        garminStepLengthMm = r.garminStepLengthMm
+    }
+}
+
+private struct GarminHRVJSON: Encodable {
+    let rrIntervalsSeconds: [Double]
+    let sdnnMilliseconds: Double?
+    let rmssdMilliseconds: Double?
+    let intervalCount: Int
+
+    init(_ h: GarminHRVData) {
+        rrIntervalsSeconds = h.rrIntervalsSeconds
+        sdnnMilliseconds = h.sdnnMilliseconds
+        rmssdMilliseconds = h.rmssdMilliseconds
+        intervalCount = h.rrIntervalsSeconds.count
     }
 }
 
