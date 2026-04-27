@@ -542,27 +542,62 @@ struct HealthSyncCLI {
         if types.isEmpty { throw CLIError.invalidArguments("No valid types") }
 
         let allowTruncated = options["--allow-truncated"] == "true"
+        // Window size for date-range batching — keeps each page well under the 10k server cap
+        // for typical HealthKit data densities. Users with very dense data can decrease this.
+        let windowDays: Double = 30
 
         let (config, token) = try ConfigStore.load()
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
 
-        // Single request at server max — server-side offset causes O(n²) HealthKit re-reads.
-        // If the result is truncated and --allow-truncated is not set, the command fails.
-        let req = HealthDataRequest(startDate: startDate, endDate: endDate, types: types, limit: 10_000, offset: nil)
-        let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
+        // Fetch complete results by splitting the date range into fixed windows.
+        // Server offset-based pagination causes O(n²) HealthKit re-reads, so instead
+        // we issue one request per time window and concatenate results.
+        var allSamples: [HealthSampleDTO] = []
+        var windowStart = startDate
+        var anyTruncated = false
+        var lastStatus: HealthDataStatus = .ok
+        var lastMessage: String?
+        let windowSeconds = windowDays * 86_400
 
-        let isTruncated = response.hasMore
-        let isFailure = response.status != .ok || (isTruncated && !allowTruncated)
+        while windowStart < endDate {
+            let windowEnd = min(windowStart.addingTimeInterval(windowSeconds), endDate)
+            let req = HealthDataRequest(startDate: windowStart, endDate: windowEnd, types: types, limit: 10_000, offset: nil)
+            let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
+            lastStatus = response.status
+            lastMessage = response.message
+
+            if response.status != .ok {
+                fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
+                exit(1)
+            }
+            if response.hasMore {
+                anyTruncated = true
+                if !allowTruncated {
+                    fputs("error: window \(windowStart)...\(windowEnd) has >10,000 samples. Narrow the date range or pass --allow-truncated.\n", stderr)
+                    exit(1)
+                }
+            }
+            allSamples.append(contentsOf: response.samples)
+            windowStart = windowEnd
+        }
+
+        if anyTruncated {
+            fputs("warning: one or more 30-day windows were truncated. Narrow the date range for complete data.\n", stderr)
+        }
+
+        // Build a synthetic response for downstream writers
+        let syntheticResponse = HealthDataResponse(status: lastStatus, samples: allSamples,
+                                                    message: lastMessage, hasMore: anyTruncated,
+                                                    returnedCount: allSamples.count)
 
         if let outputDir {
-            // Write everything — including failure manifests — atomically via a temp dir + rename.
             let tmpDir = outputDir.appendingPathComponent(".tmp-\(UUID().uuidString)")
             let runId = "\(ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-"))-\(UUID().uuidString.prefix(8))"
             let finalDir = outputDir.appendingPathComponent(runId)
             try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
             do {
-                try writeToDirectory(samples: response.samples, dir: tmpDir, format: outputFormat,
-                                     response: response, requestedTypes: types)
+                try writeToDirectory(samples: allSamples, dir: tmpDir, format: outputFormat,
+                                     response: syntheticResponse, requestedTypes: types)
                 try FileManager.default.moveItem(at: tmpDir, to: finalDir)
                 fputs("Run directory: \(finalDir.path)\n", stderr)
             } catch {
@@ -571,21 +606,9 @@ struct HealthSyncCLI {
             }
         } else {
             switch outputFormat {
-            case .json: printJSON(response)
-            case .csv: printCSV(response.samples)
+            case .json: printJSON(syntheticResponse)
+            case .csv: printCSV(allSamples)
             }
-        }
-
-        if response.status != .ok {
-            fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
-            exit(1)
-        }
-        if isTruncated && !allowTruncated {
-            fputs("error: export truncated at \(response.samples.count) samples. Narrow the date range or pass --allow-truncated.\n", stderr)
-            exit(1)
-        }
-        if isTruncated {
-            fputs("warning: export truncated at \(response.samples.count) samples.\n", stderr)
         }
     }
 
