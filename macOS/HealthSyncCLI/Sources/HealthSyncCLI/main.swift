@@ -1225,4 +1225,30 @@ enum HealthDataType: String, CaseIterable, Codable {
     case timeInDaylight
     case physicalEffort
     case mindfulMinutes
+    // Cardiac events
+    case irregularHeartRhythmEvent
+    case highHeartRateEvent
+    case lowHeartRateEvent
+    case heartRateRecoveryOneMinute
+    // Blood / metabolic
+    case bloodGlucose
+    case peripheralPerfusionIndex
+    // Swimming
+    case distanceSwimming
+    case swimmingStrokeCount
+    // Other sports / adaptive
+    case distanceDownhillSnowSports
+    case distanceWheelchair
+    case pushCount
+    // Cycling performance
+    case cyclingFunctionalThresholdPower
+    // Diving / water sports
+    case underwaterDepth
+    case waterTemperature
+    // Hearing
+    case environmentalAudioExposure
+    case headphoneAudioExposure
+    // Safety / lifestyle
+    case numberOfTimesFallen
+    case numberOfAlcoholicBeverages
 }
