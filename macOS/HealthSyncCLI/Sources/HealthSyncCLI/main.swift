@@ -119,7 +119,7 @@ struct HealthSyncCLI {
           pair --qr <json>                 Pair using QR JSON string
           status [--dry-run]               Fetch server status
           types [--dry-run]                Fetch enabled data types
-          fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--output-dir <path>] [--dry-run]  (default: csv)
+          fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--output-dir <path>] [--allow-truncated] [--dry-run]
           version, --version, -v           Show version information
 
         QUICK START:
@@ -541,21 +541,35 @@ struct HealthSyncCLI {
         let types = typesString.split(separator: ",").compactMap { HealthDataType(rawValue: String($0)) }
         if types.isEmpty { throw CLIError.invalidArguments("No valid types") }
 
+        let allowTruncated = options["--allow-truncated"] == "true"
+
         let (config, token) = try ConfigStore.load()
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
 
-        // Single request at max server limit — server-side offset causes O(n²) re-reads
-        // so multi-page loops are intentionally avoided until a cursor API exists.
+        // Single request at server max — server-side offset causes O(n²) HealthKit re-reads.
+        // If the result is truncated and --allow-truncated is not set, the command fails.
         let req = HealthDataRequest(startDate: startDate, endDate: endDate, types: types, limit: 10_000, offset: nil)
         let response: HealthDataResponse = try await client.send(path: "/api/v1/health/data", method: "POST", body: req, authorized: true)
 
+        if response.status != .ok {
+            fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
+            exit(1)
+        }
+
         if response.hasMore {
-            fputs("warning: export is truncated at 10,000 samples. Narrow the date range to get all data.\n", stderr)
+            if allowTruncated {
+                fputs("warning: export truncated at \(response.samples.count) samples. Narrow the date range for complete data.\n", stderr)
+            } else {
+                fputs("error: export would be truncated at \(response.samples.count) samples. Narrow the date range or pass --allow-truncated.\n", stderr)
+                exit(1)
+            }
         }
 
         if let outputDir {
-            try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
-            try writeToDirectory(samples: response.samples, dir: outputDir, format: outputFormat, response: response)
+            // Each run writes to a timestamped subdirectory to isolate runs and prevent stale-file mixing.
+            let runDir = outputDir.appendingPathComponent(ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-"))
+            try FileManager.default.createDirectory(at: runDir, withIntermediateDirectories: true)
+            try writeToDirectory(samples: response.samples, dir: runDir, format: outputFormat, response: response, requestedTypes: types)
         } else {
             switch outputFormat {
             case .json:
@@ -568,34 +582,51 @@ struct HealthSyncCLI {
 
     enum OutputFormat { case json, csv }
 
-    private static func writeToDirectory(samples: [HealthSampleDTO], dir: URL, format: OutputFormat, response: HealthDataResponse) throws {
+    private static func writeToDirectory(samples: [HealthSampleDTO], dir: URL, format: OutputFormat,
+                                          response: HealthDataResponse, requestedTypes: [HealthDataType]) throws {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime]
+        let ext = format == .csv ? "csv" : "json"
+
         // Only write files for known types — reject server-controlled strings as filenames.
         let knownTypeNames = Set(HealthDataType.allCases.map(\.rawValue))
         let grouped = Dictionary(grouping: samples.filter { knownTypeNames.contains($0.type) }) { $0.type }
 
-        for (typeName, typeSamples) in grouped {
-            let ext = format == .csv ? "csv" : "json"
-            let fileURL = dir.appendingPathComponent("\(typeName).\(ext)")
+        // Write a file for every requested type (empty if no data) so the run is deterministic.
+        for type_ in requestedTypes {
+            let typeSamples = grouped[type_.rawValue] ?? []
+            let fileURL = dir.appendingPathComponent("\(type_.rawValue).\(ext)")
             let content: String
             if format == .csv {
-                if typeName == HealthDataType.workouts.rawValue {
-                    content = workoutCSV(typeSamples, dateFormatter: dateFormatter)
-                } else {
-                    content = csvContent(typeSamples, dateFormatter: dateFormatter)
-                }
+                content = type_ == .workouts
+                    ? workoutCSV(typeSamples, dateFormatter: dateFormatter)
+                    : csvContent(typeSamples, dateFormatter: dateFormatter)
             } else {
                 content = jsonContent(typeSamples)
             }
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            fputs("Wrote \(typeSamples.count) \(typeName) samples → \(fileURL.path)\n", stderr)
+            fputs("Wrote \(typeSamples.count) \(type_.rawValue) samples → \(fileURL.lastPathComponent)\n", stderr)
         }
 
         let unknown = samples.filter { !knownTypeNames.contains($0.type) }
         if !unknown.isEmpty {
             fputs("warning: \(unknown.count) samples with unknown types were skipped. Update healthsync CLI.\n", stderr)
         }
+
+        // Write manifest with full run metadata so automated consumers can check status.
+        let manifestURL = dir.appendingPathComponent("manifest.json")
+        struct Manifest: Encodable {
+            let status: String; let hasMore: Bool; let totalSamples: Int
+            let message: String?; let requestedTypes: [String]
+        }
+        let manifest = Manifest(status: response.status.rawValue, hasMore: response.hasMore,
+                                totalSamples: response.samples.count, message: response.message,
+                                requestedTypes: requestedTypes.map(\.rawValue))
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let data = try? encoder.encode(manifest), let str = String(data: data, encoding: .utf8) {
+            try str.write(to: manifestURL, atomically: true, encoding: .utf8)
+        }
+        fputs("Manifest → \(manifestURL.lastPathComponent)\n", stderr)
     }
 
     private static func csvContent(_ samples: [HealthSampleDTO], dateFormatter: ISO8601DateFormatter) -> String {
