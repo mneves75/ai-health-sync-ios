@@ -46,6 +46,37 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Building version: $VERSION"
 
+      - name: Verify version consistency
+        run: |
+          TAG_VERSION="${{ steps.version.outputs.VERSION }}"
+          CLI_VERSION=$(grep -E '^let cliVersion\s*=' "$CLI_PATH/Sources/HealthSyncCLI/main.swift" | sed 's/.*"\(.*\)"/\1/')
+          MARKETING_VERSION=$(grep -m1 'MARKETING_VERSION' "iOS Health Sync App/iOS Health Sync App.xcodeproj/project.pbxproj" | sed 's/.*= \(.*\);/\1/' | tr -d ' ')
+          CHANGELOG_VERSION=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/.*\[\(.*\)\].*/\1/')
+
+          echo "Tag version:         $TAG_VERSION"
+          echo "cliVersion:          $CLI_VERSION"
+          echo "MARKETING_VERSION:   $MARKETING_VERSION"
+          echo "Changelog version:   $CHANGELOG_VERSION"
+
+          FAIL=0
+          if [[ "$CLI_VERSION" != "$TAG_VERSION" ]]; then
+            echo "ERROR: tag $TAG_VERSION != cliVersion $CLI_VERSION in main.swift"
+            FAIL=1
+          fi
+          if [[ "$MARKETING_VERSION" != "$TAG_VERSION" ]]; then
+            echo "ERROR: tag $TAG_VERSION != MARKETING_VERSION $MARKETING_VERSION in project.pbxproj"
+            FAIL=1
+          fi
+          if [[ "$CHANGELOG_VERSION" != "$TAG_VERSION" ]]; then
+            echo "ERROR: tag $TAG_VERSION != changelog entry $CHANGELOG_VERSION"
+            FAIL=1
+          fi
+          if [[ $FAIL -eq 1 ]]; then
+            echo "Version consistency check failed. Bump all version strings to match the tag before releasing."
+            exit 1
+          fi
+          echo "Version consistency check passed."
+
       - name: Build Release Binary
         run: |
           cd "$CLI_PATH"
