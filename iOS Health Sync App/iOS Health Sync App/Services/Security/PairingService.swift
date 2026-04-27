@@ -90,6 +90,12 @@ actor PairingService {
         }
     }
 
+    /// Deletes every paired device from the local store. The previous
+    /// implementation soft-deleted by setting `isActive = false`, but the UI
+    /// `@Query` returns all rows regardless of state, so revoked devices
+    /// kept appearing in the Connected Macs section after revocation. Hard
+    /// deletion also removes the device's `tokenHash` from disk, which is
+    /// preferable on data-minimization grounds.
     func revokeAll() async {
         await MainActor.run {
             let context = modelContainer.mainContext
@@ -102,7 +108,7 @@ actor PairingService {
                 return
             }
             for device in devices {
-                device.isActive = false
+                context.delete(device)
             }
             do {
                 try context.save()

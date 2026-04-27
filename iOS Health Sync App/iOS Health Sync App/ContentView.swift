@@ -276,8 +276,9 @@ struct ContentView: View {
     }
 
     /// Connected Macs section — visible only once the user has paired at
-    /// least one Mac. Shows each paired device with a per-device Revoke
-    /// action and the security-critical "Revoke All Pairings" at the bottom.
+    /// least one Mac. Lists each paired device with active state and last-seen
+    /// time. The security-critical "Revoke All Pairings" sits at the bottom
+    /// with a confirmation dialog. Per-device revoke is a future enhancement.
     /// The destructive action is *not* in the audit section anymore.
     private var connectedMacsSection: some View {
         Section {
