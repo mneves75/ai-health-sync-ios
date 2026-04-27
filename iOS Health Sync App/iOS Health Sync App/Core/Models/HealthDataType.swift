@@ -102,6 +102,140 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
     case physicalEffort
     case mindfulMinutes
 
+    // Nutrition — energy and water
+    case dietaryEnergyConsumed
+    case dietaryWater
+    case dietaryCaffeine
+
+    // Nutrition — macronutrients
+    case dietaryProtein
+    case dietaryFatTotal
+    case dietaryFatSaturated
+    case dietaryFatPolyunsaturated
+    case dietaryFatMonounsaturated
+    case dietaryCholesterol
+    case dietaryCarbohydrates
+    case dietaryFiber
+    case dietarySugar
+
+    // Nutrition — minerals
+    case dietarySodium
+    case dietaryCalcium
+    case dietaryIron
+    case dietaryMagnesium
+    case dietaryPotassium
+    case dietaryZinc
+    case dietaryPhosphorus
+    case dietaryIodine
+    case dietarySelenium
+    case dietaryCopper
+    case dietaryManganese
+    case dietaryChromium
+    case dietaryMolybdenum
+    case dietaryChloride
+
+    // Nutrition — vitamins
+    case dietaryVitaminA
+    case dietaryVitaminB6
+    case dietaryVitaminB12
+    case dietaryVitaminC
+    case dietaryVitaminD
+    case dietaryVitaminE
+    case dietaryVitaminK
+    case dietaryRiboflavin
+    case dietaryThiamin
+    case dietaryNiacin
+    case dietaryFolate
+    case dietaryBiotin
+    case dietaryPantothenicAcid
+
+    // Symptoms
+    case abdominalCramps
+    case acne
+    case appetiteChanges
+    case bladderIncontinence
+    case bloating
+    case breastPain
+    case chestTightnessOrPain
+    case chills
+    case constipation
+    case coughing
+    case diarrhea
+    case dizziness
+    case drySkin
+    case fainting
+    case fatigue
+    case fever
+    case generalizedBodyAche
+    case hairLoss
+    case headache
+    case heartburn
+    case hotFlashes
+    case lossOfSmell
+    case lossOfTaste
+    case lowerBackPain
+    case memoryLapse
+    case moodChanges
+    case nausea
+    case nightSweats
+    case pelvicPain
+    case rapidPoundingOrFlutteringHeartbeat
+    case runnyNose
+    case shortnessOfBreath
+    case sinusCongestion
+    case skippedHeartbeat
+    case sleepChanges
+    case soreThroat
+    case vaginalDryness
+    case vomiting
+    case wheezing
+
+    // Reproductive health
+    case menstrualFlow
+    case intermenstrualBleeding
+    case infrequentMenstrualCycles
+    case irregularMenstrualCycles
+    case persistentIntermenstrualBleeding
+    case prolongedMenstrualPeriods
+    case ovulationTestResult
+    case pregnancyTestResult
+    case progesteroneTestResult
+    case sexualActivity
+    case cervicalMucusQuality
+    case contraceptive
+    case lactation
+    case bleedingAfterPregnancy
+    case bleedingDuringPregnancy
+
+    // Lifestyle / hygiene events
+    case handwashingEvent
+    case toothbrushingEvent
+
+    // Audio events
+    case environmentalAudioExposureEvent
+    case headphoneAudioExposureEvent
+
+    // Cardio fitness / mobility events
+    case lowCardioFitnessEvent
+    case appleWalkingSteadinessEvent
+    case appleStandHour
+
+    // Vital signs / spirometry
+    case basalBodyTemperature
+    case bloodAlcoholContent
+    case electrodermalActivity
+    case environmentalSoundReduction
+    case forcedExpiratoryVolume1
+    case forcedVitalCapacity
+    case peakExpiratoryFlowRate
+    case inhalerUsage
+    case insulinDelivery
+    case nikeFuel
+    case sixMinuteWalkTestDistance
+    case appleWalkingSteadiness
+    case uvExposure
+    case appleMoveTime
+
     var id: String { rawValue }
 
     var displayName: String {
@@ -175,6 +309,120 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .timeInDaylight: return "Time in Daylight"
         case .physicalEffort: return "Physical Effort"
         case .mindfulMinutes: return "Mindful Minutes"
+        case .dietaryEnergyConsumed: return "Dietary Energy"
+        case .dietaryWater: return "Water"
+        case .dietaryCaffeine: return "Caffeine"
+        case .dietaryProtein: return "Protein"
+        case .dietaryFatTotal: return "Total Fat"
+        case .dietaryFatSaturated: return "Saturated Fat"
+        case .dietaryFatPolyunsaturated: return "Polyunsaturated Fat"
+        case .dietaryFatMonounsaturated: return "Monounsaturated Fat"
+        case .dietaryCholesterol: return "Cholesterol"
+        case .dietaryCarbohydrates: return "Carbohydrates"
+        case .dietaryFiber: return "Fiber"
+        case .dietarySugar: return "Sugar"
+        case .dietarySodium: return "Sodium"
+        case .dietaryCalcium: return "Calcium"
+        case .dietaryIron: return "Iron"
+        case .dietaryMagnesium: return "Magnesium"
+        case .dietaryPotassium: return "Potassium"
+        case .dietaryZinc: return "Zinc"
+        case .dietaryPhosphorus: return "Phosphorus"
+        case .dietaryIodine: return "Iodine"
+        case .dietarySelenium: return "Selenium"
+        case .dietaryCopper: return "Copper"
+        case .dietaryManganese: return "Manganese"
+        case .dietaryChromium: return "Chromium"
+        case .dietaryMolybdenum: return "Molybdenum"
+        case .dietaryChloride: return "Chloride"
+        case .dietaryVitaminA: return "Vitamin A"
+        case .dietaryVitaminB6: return "Vitamin B6"
+        case .dietaryVitaminB12: return "Vitamin B12"
+        case .dietaryVitaminC: return "Vitamin C"
+        case .dietaryVitaminD: return "Vitamin D"
+        case .dietaryVitaminE: return "Vitamin E"
+        case .dietaryVitaminK: return "Vitamin K"
+        case .dietaryRiboflavin: return "Riboflavin"
+        case .dietaryThiamin: return "Thiamin"
+        case .dietaryNiacin: return "Niacin"
+        case .dietaryFolate: return "Folate"
+        case .dietaryBiotin: return "Biotin"
+        case .dietaryPantothenicAcid: return "Pantothenic Acid"
+        case .abdominalCramps: return "Abdominal Cramps"
+        case .acne: return "Acne"
+        case .appetiteChanges: return "Appetite Changes"
+        case .bladderIncontinence: return "Bladder Incontinence"
+        case .bloating: return "Bloating"
+        case .breastPain: return "Breast Pain"
+        case .chestTightnessOrPain: return "Chest Tightness/Pain"
+        case .chills: return "Chills"
+        case .constipation: return "Constipation"
+        case .coughing: return "Coughing"
+        case .diarrhea: return "Diarrhea"
+        case .dizziness: return "Dizziness"
+        case .drySkin: return "Dry Skin"
+        case .fainting: return "Fainting"
+        case .fatigue: return "Fatigue"
+        case .fever: return "Fever"
+        case .generalizedBodyAche: return "Body Ache"
+        case .hairLoss: return "Hair Loss"
+        case .headache: return "Headache"
+        case .heartburn: return "Heartburn"
+        case .hotFlashes: return "Hot Flashes"
+        case .lossOfSmell: return "Loss of Smell"
+        case .lossOfTaste: return "Loss of Taste"
+        case .lowerBackPain: return "Lower Back Pain"
+        case .memoryLapse: return "Memory Lapse"
+        case .moodChanges: return "Mood Changes"
+        case .nausea: return "Nausea"
+        case .nightSweats: return "Night Sweats"
+        case .pelvicPain: return "Pelvic Pain"
+        case .rapidPoundingOrFlutteringHeartbeat: return "Heart Pounding/Fluttering"
+        case .runnyNose: return "Runny Nose"
+        case .shortnessOfBreath: return "Shortness of Breath"
+        case .sinusCongestion: return "Sinus Congestion"
+        case .skippedHeartbeat: return "Skipped Heartbeat"
+        case .sleepChanges: return "Sleep Changes"
+        case .soreThroat: return "Sore Throat"
+        case .vaginalDryness: return "Vaginal Dryness"
+        case .vomiting: return "Vomiting"
+        case .wheezing: return "Wheezing"
+        case .menstrualFlow: return "Menstrual Flow"
+        case .intermenstrualBleeding: return "Intermenstrual Bleeding"
+        case .infrequentMenstrualCycles: return "Infrequent Periods"
+        case .irregularMenstrualCycles: return "Irregular Periods"
+        case .persistentIntermenstrualBleeding: return "Persistent Intermenstrual Bleeding"
+        case .prolongedMenstrualPeriods: return "Prolonged Periods"
+        case .ovulationTestResult: return "Ovulation Test"
+        case .pregnancyTestResult: return "Pregnancy Test"
+        case .progesteroneTestResult: return "Progesterone Test"
+        case .sexualActivity: return "Sexual Activity"
+        case .cervicalMucusQuality: return "Cervical Mucus"
+        case .contraceptive: return "Contraceptive"
+        case .lactation: return "Lactation"
+        case .bleedingAfterPregnancy: return "Bleeding After Pregnancy"
+        case .bleedingDuringPregnancy: return "Bleeding During Pregnancy"
+        case .handwashingEvent: return "Handwashing"
+        case .toothbrushingEvent: return "Toothbrushing"
+        case .environmentalAudioExposureEvent: return "Loud Environment Event"
+        case .headphoneAudioExposureEvent: return "Loud Headphones Event"
+        case .lowCardioFitnessEvent: return "Low Cardio Fitness Event"
+        case .appleWalkingSteadinessEvent: return "Walking Steadiness Event"
+        case .appleStandHour: return "Stand Hour"
+        case .basalBodyTemperature: return "Basal Body Temperature"
+        case .bloodAlcoholContent: return "Blood Alcohol"
+        case .electrodermalActivity: return "Electrodermal Activity"
+        case .environmentalSoundReduction: return "Sound Reduction"
+        case .forcedExpiratoryVolume1: return "FEV1"
+        case .forcedVitalCapacity: return "Forced Vital Capacity"
+        case .peakExpiratoryFlowRate: return "Peak Expiratory Flow"
+        case .inhalerUsage: return "Inhaler Usage"
+        case .insulinDelivery: return "Insulin Delivery"
+        case .nikeFuel: return "NikeFuel"
+        case .sixMinuteWalkTestDistance: return "6-Min Walk Test"
+        case .appleWalkingSteadiness: return "Walking Steadiness"
+        case .uvExposure: return "UV Exposure"
+        case .appleMoveTime: return "Move Time"
         }
     }
 
@@ -249,6 +497,120 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         case .timeInDaylight: return HKObjectType.quantityType(forIdentifier: .timeInDaylight)
         case .physicalEffort: return HKObjectType.quantityType(forIdentifier: .physicalEffort)
         case .mindfulMinutes: return HKObjectType.categoryType(forIdentifier: .mindfulSession)
+        case .dietaryEnergyConsumed: return HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed)
+        case .dietaryWater: return HKObjectType.quantityType(forIdentifier: .dietaryWater)
+        case .dietaryCaffeine: return HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)
+        case .dietaryProtein: return HKObjectType.quantityType(forIdentifier: .dietaryProtein)
+        case .dietaryFatTotal: return HKObjectType.quantityType(forIdentifier: .dietaryFatTotal)
+        case .dietaryFatSaturated: return HKObjectType.quantityType(forIdentifier: .dietaryFatSaturated)
+        case .dietaryFatPolyunsaturated: return HKObjectType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)
+        case .dietaryFatMonounsaturated: return HKObjectType.quantityType(forIdentifier: .dietaryFatMonounsaturated)
+        case .dietaryCholesterol: return HKObjectType.quantityType(forIdentifier: .dietaryCholesterol)
+        case .dietaryCarbohydrates: return HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates)
+        case .dietaryFiber: return HKObjectType.quantityType(forIdentifier: .dietaryFiber)
+        case .dietarySugar: return HKObjectType.quantityType(forIdentifier: .dietarySugar)
+        case .dietarySodium: return HKObjectType.quantityType(forIdentifier: .dietarySodium)
+        case .dietaryCalcium: return HKObjectType.quantityType(forIdentifier: .dietaryCalcium)
+        case .dietaryIron: return HKObjectType.quantityType(forIdentifier: .dietaryIron)
+        case .dietaryMagnesium: return HKObjectType.quantityType(forIdentifier: .dietaryMagnesium)
+        case .dietaryPotassium: return HKObjectType.quantityType(forIdentifier: .dietaryPotassium)
+        case .dietaryZinc: return HKObjectType.quantityType(forIdentifier: .dietaryZinc)
+        case .dietaryPhosphorus: return HKObjectType.quantityType(forIdentifier: .dietaryPhosphorus)
+        case .dietaryIodine: return HKObjectType.quantityType(forIdentifier: .dietaryIodine)
+        case .dietarySelenium: return HKObjectType.quantityType(forIdentifier: .dietarySelenium)
+        case .dietaryCopper: return HKObjectType.quantityType(forIdentifier: .dietaryCopper)
+        case .dietaryManganese: return HKObjectType.quantityType(forIdentifier: .dietaryManganese)
+        case .dietaryChromium: return HKObjectType.quantityType(forIdentifier: .dietaryChromium)
+        case .dietaryMolybdenum: return HKObjectType.quantityType(forIdentifier: .dietaryMolybdenum)
+        case .dietaryChloride: return HKObjectType.quantityType(forIdentifier: .dietaryChloride)
+        case .dietaryVitaminA: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminA)
+        case .dietaryVitaminB6: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminB6)
+        case .dietaryVitaminB12: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminB12)
+        case .dietaryVitaminC: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminC)
+        case .dietaryVitaminD: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminD)
+        case .dietaryVitaminE: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminE)
+        case .dietaryVitaminK: return HKObjectType.quantityType(forIdentifier: .dietaryVitaminK)
+        case .dietaryRiboflavin: return HKObjectType.quantityType(forIdentifier: .dietaryRiboflavin)
+        case .dietaryThiamin: return HKObjectType.quantityType(forIdentifier: .dietaryThiamin)
+        case .dietaryNiacin: return HKObjectType.quantityType(forIdentifier: .dietaryNiacin)
+        case .dietaryFolate: return HKObjectType.quantityType(forIdentifier: .dietaryFolate)
+        case .dietaryBiotin: return HKObjectType.quantityType(forIdentifier: .dietaryBiotin)
+        case .dietaryPantothenicAcid: return HKObjectType.quantityType(forIdentifier: .dietaryPantothenicAcid)
+        case .abdominalCramps: return HKObjectType.categoryType(forIdentifier: .abdominalCramps)
+        case .acne: return HKObjectType.categoryType(forIdentifier: .acne)
+        case .appetiteChanges: return HKObjectType.categoryType(forIdentifier: .appetiteChanges)
+        case .bladderIncontinence: return HKObjectType.categoryType(forIdentifier: .bladderIncontinence)
+        case .bloating: return HKObjectType.categoryType(forIdentifier: .bloating)
+        case .breastPain: return HKObjectType.categoryType(forIdentifier: .breastPain)
+        case .chestTightnessOrPain: return HKObjectType.categoryType(forIdentifier: .chestTightnessOrPain)
+        case .chills: return HKObjectType.categoryType(forIdentifier: .chills)
+        case .constipation: return HKObjectType.categoryType(forIdentifier: .constipation)
+        case .coughing: return HKObjectType.categoryType(forIdentifier: .coughing)
+        case .diarrhea: return HKObjectType.categoryType(forIdentifier: .diarrhea)
+        case .dizziness: return HKObjectType.categoryType(forIdentifier: .dizziness)
+        case .drySkin: return HKObjectType.categoryType(forIdentifier: .drySkin)
+        case .fainting: return HKObjectType.categoryType(forIdentifier: .fainting)
+        case .fatigue: return HKObjectType.categoryType(forIdentifier: .fatigue)
+        case .fever: return HKObjectType.categoryType(forIdentifier: .fever)
+        case .generalizedBodyAche: return HKObjectType.categoryType(forIdentifier: .generalizedBodyAche)
+        case .hairLoss: return HKObjectType.categoryType(forIdentifier: .hairLoss)
+        case .headache: return HKObjectType.categoryType(forIdentifier: .headache)
+        case .heartburn: return HKObjectType.categoryType(forIdentifier: .heartburn)
+        case .hotFlashes: return HKObjectType.categoryType(forIdentifier: .hotFlashes)
+        case .lossOfSmell: return HKObjectType.categoryType(forIdentifier: .lossOfSmell)
+        case .lossOfTaste: return HKObjectType.categoryType(forIdentifier: .lossOfTaste)
+        case .lowerBackPain: return HKObjectType.categoryType(forIdentifier: .lowerBackPain)
+        case .memoryLapse: return HKObjectType.categoryType(forIdentifier: .memoryLapse)
+        case .moodChanges: return HKObjectType.categoryType(forIdentifier: .moodChanges)
+        case .nausea: return HKObjectType.categoryType(forIdentifier: .nausea)
+        case .nightSweats: return HKObjectType.categoryType(forIdentifier: .nightSweats)
+        case .pelvicPain: return HKObjectType.categoryType(forIdentifier: .pelvicPain)
+        case .rapidPoundingOrFlutteringHeartbeat: return HKObjectType.categoryType(forIdentifier: .rapidPoundingOrFlutteringHeartbeat)
+        case .runnyNose: return HKObjectType.categoryType(forIdentifier: .runnyNose)
+        case .shortnessOfBreath: return HKObjectType.categoryType(forIdentifier: .shortnessOfBreath)
+        case .sinusCongestion: return HKObjectType.categoryType(forIdentifier: .sinusCongestion)
+        case .skippedHeartbeat: return HKObjectType.categoryType(forIdentifier: .skippedHeartbeat)
+        case .sleepChanges: return HKObjectType.categoryType(forIdentifier: .sleepChanges)
+        case .soreThroat: return HKObjectType.categoryType(forIdentifier: .soreThroat)
+        case .vaginalDryness: return HKObjectType.categoryType(forIdentifier: .vaginalDryness)
+        case .vomiting: return HKObjectType.categoryType(forIdentifier: .vomiting)
+        case .wheezing: return HKObjectType.categoryType(forIdentifier: .wheezing)
+        case .menstrualFlow: return HKObjectType.categoryType(forIdentifier: .menstrualFlow)
+        case .intermenstrualBleeding: return HKObjectType.categoryType(forIdentifier: .intermenstrualBleeding)
+        case .infrequentMenstrualCycles: return HKObjectType.categoryType(forIdentifier: .infrequentMenstrualCycles)
+        case .irregularMenstrualCycles: return HKObjectType.categoryType(forIdentifier: .irregularMenstrualCycles)
+        case .persistentIntermenstrualBleeding: return HKObjectType.categoryType(forIdentifier: .persistentIntermenstrualBleeding)
+        case .prolongedMenstrualPeriods: return HKObjectType.categoryType(forIdentifier: .prolongedMenstrualPeriods)
+        case .ovulationTestResult: return HKObjectType.categoryType(forIdentifier: .ovulationTestResult)
+        case .pregnancyTestResult: return HKObjectType.categoryType(forIdentifier: .pregnancyTestResult)
+        case .progesteroneTestResult: return HKObjectType.categoryType(forIdentifier: .progesteroneTestResult)
+        case .sexualActivity: return HKObjectType.categoryType(forIdentifier: .sexualActivity)
+        case .cervicalMucusQuality: return HKObjectType.categoryType(forIdentifier: .cervicalMucusQuality)
+        case .contraceptive: return HKObjectType.categoryType(forIdentifier: .contraceptive)
+        case .lactation: return HKObjectType.categoryType(forIdentifier: .lactation)
+        case .bleedingAfterPregnancy: return HKObjectType.categoryType(forIdentifier: .bleedingAfterPregnancy)
+        case .bleedingDuringPregnancy: return HKObjectType.categoryType(forIdentifier: .bleedingDuringPregnancy)
+        case .handwashingEvent: return HKObjectType.categoryType(forIdentifier: .handwashingEvent)
+        case .toothbrushingEvent: return HKObjectType.categoryType(forIdentifier: .toothbrushingEvent)
+        case .environmentalAudioExposureEvent: return HKObjectType.categoryType(forIdentifier: .environmentalAudioExposureEvent)
+        case .headphoneAudioExposureEvent: return HKObjectType.categoryType(forIdentifier: .headphoneAudioExposureEvent)
+        case .lowCardioFitnessEvent: return HKObjectType.categoryType(forIdentifier: .lowCardioFitnessEvent)
+        case .appleWalkingSteadinessEvent: return HKObjectType.categoryType(forIdentifier: .appleWalkingSteadinessEvent)
+        case .appleStandHour: return HKObjectType.categoryType(forIdentifier: .appleStandHour)
+        case .basalBodyTemperature: return HKObjectType.quantityType(forIdentifier: .basalBodyTemperature)
+        case .bloodAlcoholContent: return HKObjectType.quantityType(forIdentifier: .bloodAlcoholContent)
+        case .electrodermalActivity: return HKObjectType.quantityType(forIdentifier: .electrodermalActivity)
+        case .environmentalSoundReduction: return HKObjectType.quantityType(forIdentifier: .environmentalSoundReduction)
+        case .forcedExpiratoryVolume1: return HKObjectType.quantityType(forIdentifier: .forcedExpiratoryVolume1)
+        case .forcedVitalCapacity: return HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)
+        case .peakExpiratoryFlowRate: return HKObjectType.quantityType(forIdentifier: .peakExpiratoryFlowRate)
+        case .inhalerUsage: return HKObjectType.quantityType(forIdentifier: .inhalerUsage)
+        case .insulinDelivery: return HKObjectType.quantityType(forIdentifier: .insulinDelivery)
+        case .nikeFuel: return HKObjectType.quantityType(forIdentifier: .nikeFuel)
+        case .sixMinuteWalkTestDistance: return HKObjectType.quantityType(forIdentifier: .sixMinuteWalkTestDistance)
+        case .appleWalkingSteadiness: return HKObjectType.quantityType(forIdentifier: .appleWalkingSteadiness)
+        case .uvExposure: return HKObjectType.quantityType(forIdentifier: .uvExposure)
+        case .appleMoveTime: return HKObjectType.quantityType(forIdentifier: .appleMoveTime)
         }
     }
 
