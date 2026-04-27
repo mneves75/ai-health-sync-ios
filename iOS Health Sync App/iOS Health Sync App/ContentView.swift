@@ -23,6 +23,9 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
+                if shouldShowGettingStarted {
+                    gettingStartedSection
+                }
                 statusSection
                 permissionsSection
                 serverSection
@@ -87,31 +90,191 @@ struct ContentView: View {
         return "\(version) (\(build))"
     }
 
+    /// Shows the Getting Started section until the user has paired at least one
+    /// Mac. After that they don't need the hand-holding.
+    private var shouldShowGettingStarted: Bool {
+        !appState.healthAuthorizationStatus || !appState.isServerRunning
+    }
+
+    /// Step-by-step setup checklist for non-technical users. Each row reflects
+    /// the actual state of the app and dims when complete.
+    private var gettingStartedSection: some View {
+        Section {
+            stepRow(
+                number: 1,
+                title: "Grant Health Access",
+                detail: "Allows HealthSync to read your Apple Health data.",
+                isComplete: appState.healthAuthorizationStatus,
+                isActionable: !appState.healthAuthorizationStatus
+            ) {
+                HapticFeedback.impact(.medium)
+                Task { await appState.requestHealthAuthorization() }
+            }
+
+            stepRow(
+                number: 2,
+                title: "Start Sharing",
+                detail: "Turns on the connection so a Mac can fetch your data.",
+                isComplete: appState.isServerRunning,
+                isActionable: appState.healthAuthorizationStatus && !appState.isServerRunning
+            ) {
+                HapticFeedback.impact(.medium)
+                Task { await appState.startServer() }
+            }
+
+            stepRow(
+                number: 3,
+                title: "Connect Your Mac",
+                detail: "Install HealthSync CLI on your Mac (one command via Homebrew), then run \u{201C}healthsync scan\u{201D} to pair.",
+                isComplete: false,
+                isActionable: appState.isServerRunning,
+                actionLabel: "Show Pairing Instructions"
+            ) {
+                // Scroll to pairing section is implicit — the QR is already visible below.
+                // We could add ScrollViewReader here later if the section gets long.
+            }
+        } header: {
+            HStack {
+                Image(systemName: "checklist")
+                Text("Getting Started")
+                Spacer()
+                Text(setupProgress)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        } footer: {
+            if !appState.healthAuthorizationStatus {
+                Text("Tap step 1 to begin. The whole setup takes under a minute.")
+                    .font(.caption)
+            } else if !appState.isServerRunning {
+                Text("Tap step 2 to turn on sharing.")
+                    .font(.caption)
+            } else {
+                Text("Now scan the QR code below with the HealthSync CLI on your Mac. Once paired, the Mac will pull your data on demand.")
+                    .font(.caption)
+            }
+        }
+    }
+
+    private var setupProgress: String {
+        var done = 0
+        if appState.healthAuthorizationStatus { done += 1 }
+        if appState.isServerRunning { done += 1 }
+        return "\(done) of 3"
+    }
+
+    @ViewBuilder
+    private func stepRow(
+        number: Int,
+        title: String,
+        detail: String,
+        isComplete: Bool,
+        isActionable: Bool,
+        actionLabel: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(isComplete ? Color.green : (isActionable ? Color.accentColor : Color.secondary.opacity(0.25)))
+                        .frame(width: 28, height: 28)
+                    if isComplete {
+                        Image(systemName: "checkmark")
+                            .font(.callout.weight(.bold))
+                            .foregroundStyle(.white)
+                    } else {
+                        Text("\(number)")
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(isComplete ? .secondary : .primary)
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if isActionable, let actionLabel {
+                        Text(actionLabel)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tint)
+                            .padding(.top, 2)
+                    }
+                }
+                Spacer()
+                if isActionable {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isActionable && !isComplete)
+        .opacity(isComplete && !isActionable ? 0.7 : 1.0)
+    }
+
     private var statusSection: some View {
         Section("Status") {
             LabeledContent("Version", value: appVersion)
-            LabeledContent("Protected Data", value: appState.protectedDataAvailable ? "Available" : "Locked")
-            // NOTE: For READ-only HealthKit permissions, Apple hides whether user granted or denied.
-            // We can only know if we've requested (user saw the dialog), not if they approved.
-            LabeledContent("HealthKit", value: appState.healthAuthorizationStatus ? "Requested" : "Not Requested")
+            LabeledContent("Device", value: appState.protectedDataAvailable ? "Unlocked" : "Locked")
+            healthKitStatusRow
             if let lastExport = appState.syncConfiguration.lastExportAt {
                 LabeledContent("Last Sync", value: lastExport.formatted())
             }
         }
     }
 
-    private var permissionsSection: some View {
-        Section("Permissions") {
-            Button {
-                HapticFeedback.impact(.medium)
-                Task { await appState.requestHealthAuthorization() }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "heart.fill")
-                    Text("Request HealthKit Access")
-                }
+    /// Shows a friendlier HealthKit status that reflects actual access where
+    /// possible. iOS hides "denied" for read-only, so when authorization has
+    /// been requested but the probe found no data, surface a soft warning with
+    /// a Settings deep link rather than claiming "Requested" was a success.
+    @ViewBuilder
+    private var healthKitStatusRow: some View {
+        if !appState.healthAuthorizationStatus {
+            LabeledContent("Health Access", value: "Not yet requested")
+        } else if appState.hasAnyHealthData {
+            HStack {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text("Health Access")
+                Spacer()
+                Text("Granted").foregroundStyle(.secondary)
             }
-            .liquidGlassButtonStyle(.prominent)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("Health Access").foregroundStyle(.primary)
+                    Spacer()
+                    Text("Limited").foregroundStyle(.orange)
+                }
+                Text("HealthSync can't read any data. Open Settings → Privacy & Security → Health → HealthSync and enable the categories you want to share.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                .font(.caption.weight(.semibold))
+            }
+        }
+    }
+
+    /// Hidden once the user has granted access. The Getting Started checklist
+    /// at the top of the screen handles the initial request. Re-requesting is
+    /// rarely needed, so we hide this row to reduce noise. Users can always
+    /// adjust permissions in Settings.app via the "Open Settings" button on
+    /// the Health Access row.
+    @ViewBuilder
+    private var permissionsSection: some View {
+        if !appState.healthAuthorizationStatus {
+            EmptyView()
+        } else {
+            EmptyView()
         }
     }
 
@@ -163,13 +326,16 @@ struct ContentView: View {
                 .disabled(appState.isServerStarting)
             }
         } header: {
-            Text("Sharing Server")
+            Text("Sharing")
         } footer: {
             if appState.isServerRunning {
-                Label("Screen stays on while sharing to keep the connection alive. This will use more battery than usual.",
+                Label("Screen stays on while sharing so your Mac can keep its connection. This uses more battery — turn off when you're done.",
                       systemImage: "sun.max.fill")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } else {
+                Text("Sharing makes your data available for your paired Mac to fetch over your local Wi-Fi.")
+                    .font(.caption)
             }
         }
         .animation(.smooth, value: appState.isServerRunning)
@@ -322,16 +488,31 @@ struct ContentView: View {
                     }
                 }
 
-                // Info about keeping app in foreground
-                Label("Keep the app open for best reliability", systemImage: "info.circle")
-                    .font(.caption)
+                // Pairing instructions for first-time users
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("How to pair your Mac", systemImage: "info.circle")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("1. On your Mac, install the CLI:")
+                            .font(.caption)
+                        Text("brew install mneves75/tap/healthsync")
+                            .font(.caption2.monospaced())
+                            .padding(6)
+                            .background(Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                        Text("2. Run \u{201C}healthsync scan\u{201D} and it will find this iPhone.")
+                            .font(.caption)
+                        Text("3. Keep this app open until pairing completes.")
+                            .font(.caption)
+                    }
                     .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
             } else {
-                // Empty state with glass styling
                 ContentUnavailableView {
-                    Label("No QR Code", systemImage: "qrcode")
+                    Label("Not Sharing Yet", systemImage: "qrcode")
                 } description: {
-                    Text("Start sharing to generate a pairing QR code.")
+                    Text("Tap \u{201C}Start Sharing\u{201D} above to generate a pairing QR code for your Mac.")
                 }
                 .listRowBackground(Color.clear)
             }

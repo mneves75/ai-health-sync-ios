@@ -725,13 +725,20 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
         }
     }
 
-    /// Curated default-enabled set for first launch. Sensitive types are excluded.
-    /// All other 168 types are off by default; users opt in via the picker UI.
-    static let defaultEnabled: Set<HealthDataType> = [
-        .steps, .distanceWalkingRunning, .activeEnergyBurned, .exerciseTime,
-        .heartRate, .restingHeartRate, .sleepAnalysis, .workouts,
-        .flightsClimbed, .weight
-    ]
+    /// Default-enabled set for first launch: every non-sensitive type. The user
+    /// gets a ready-to-sync experience covering the full standard health profile
+    /// (activity, vitals, sleep, body, nutrition, symptoms, mobility, hearing,
+    /// spirometry, lifestyle). Sensitive categories — reproductive health,
+    /// mental-health symptoms, alcohol, medical-grade cardiac event alerts —
+    /// stay off until the user explicitly opts in via the picker.
+    ///
+    /// Rationale: this is a sync tool to the user's own destinations (their
+    /// Mac, their iCloud folder, their files). It is not data sharing with a
+    /// third party. Defaulting to "mirror everything except the truly intimate"
+    /// matches the actual mental model and minimizes setup friction.
+    static let defaultEnabled: Set<HealthDataType> = {
+        Set(HealthDataType.allCases.filter { !$0.isSensitive })
+    }()
 
     var isDefaultEnabled: Bool { Self.defaultEnabled.contains(self) }
 

@@ -96,16 +96,24 @@ struct OnboardingView: View {
             Text("Grant HealthKit Access")
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
-            Text("HealthSync needs read access to the categories you choose to share. You can change selections any time on the main screen.")
+            Text("HealthSync will mirror your full Apple Health profile to your destinations. You can adjust selections any time on the main screen.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-            Text("Default selection: 10 common metrics (steps, heart rate, sleep, workouts, weight). Sensitive categories like reproductive health are off until you enable them.")
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("**On by default:** activity, vitals, sleep, workouts, body, nutrition, hearing, mobility, lifestyle, symptoms.")
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "lock.shield").foregroundStyle(.orange)
+                    Text("**Off by default:** reproductive health, mental-health symptoms, alcohol, cardiac event alerts. Enable any of these later with one tap.")
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 32)
             Spacer()
             VStack(spacing: 12) {
                 Button {
