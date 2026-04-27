@@ -360,15 +360,13 @@ actor NetworkServer {
             let context = modelContainer.mainContext
             let descriptor = FetchDescriptor<SyncConfiguration>()
             let config = try context.fetch(descriptor).first
-            guard let config else {
-                throw ConfigError.notFound
-            }
-            return config.enabledTypes
+            if let config { return config.enabledTypes }
+            // First-run: no row yet — create one with safe defaults and persist it.
+            let newConfig = SyncConfiguration()
+            context.insert(newConfig)
+            try context.save()
+            return newConfig.enabledTypes
         }
-    }
-
-    private enum ConfigError: Error {
-        case notFound
     }
 
     private func updateLastExport() async {

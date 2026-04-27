@@ -482,9 +482,11 @@ struct HealthSyncCLI {
         // Format fingerprint for display (show first 12 chars)
         let shortFingerprint = config.fingerprint.isEmpty ? "Unknown" : "SHA256:\(config.fingerprint.prefix(12))..."
 
-        // Count data types
-        let typeCount = response.enabledTypes.count
-        let typesSummary = typeCount == 1 ? "1 data type" : "\(typeCount) data types"
+        // Count data types (include unknown values from newer server versions)
+        let typeCount = response.enabledTypesWire.allDisplayStrings.count
+        let unknownCount = response.enabledTypesWire.unknownRaw.count
+        var typesSummary = typeCount == 1 ? "1 data type" : "\(typeCount) data types"
+        if unknownCount > 0 { typesSummary += " (\(unknownCount) unknown — update CLI)" }
 
         print("📡 Connection Status: \(statusIcon) \(statusText)")
         print("📱 Device: \(response.deviceName)")
@@ -505,7 +507,11 @@ struct HealthSyncCLI {
         let (config, token) = try ConfigStore.load()
         let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
         let response: TypesResponse = try await client.send(path: "/api/v1/health/types", method: "GET", body: EmptyBody(), authorized: true)
-        print(response.enabledTypes.map { $0.rawValue }.joined(separator: ", "))
+        let allTypes = response.enabledTypesWire.allDisplayStrings
+        print(allTypes.joined(separator: ", "))
+        if !response.enabledTypesWire.unknownRaw.isEmpty {
+            fputs("warning: \(response.enabledTypesWire.unknownRaw.count) unknown type(s) from server — update healthsync CLI\n", stderr)
+        }
     }
 
     static func fetch(args: [String]) async throws {
@@ -1088,37 +1094,42 @@ struct HealthDataResponse: Codable {
     let message: String?
 }
 
+struct EnabledTypesWire: Decodable {
+    let known: [HealthDataType]
+    let unknownRaw: [String]
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        let raw = try c.decode([String].self)
+        known = raw.compactMap { HealthDataType(rawValue: $0) }
+        unknownRaw = raw.filter { HealthDataType(rawValue: $0) == nil }
+    }
+
+    var allDisplayStrings: [String] { known.map(\.rawValue) + unknownRaw }
+}
+
 struct StatusResponse: Decodable {
     let status: String
     let version: String
     let deviceName: String
-    let enabledTypes: [HealthDataType]
+    let enabledTypesWire: EnabledTypesWire
     let serverTime: Date
 
-    private enum CodingKeys: String, CodingKey {
-        case status, version, deviceName, enabledTypes, serverTime
-    }
+    var enabledTypes: [HealthDataType] { enabledTypesWire.known }
 
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        status = try c.decode(String.self, forKey: .status)
-        version = try c.decode(String.self, forKey: .version)
-        deviceName = try c.decode(String.self, forKey: .deviceName)
-        serverTime = try c.decode(Date.self, forKey: .serverTime)
-        let rawTypes = try c.decode([String].self, forKey: .enabledTypes)
-        enabledTypes = rawTypes.compactMap { HealthDataType(rawValue: $0) }
+    private enum CodingKeys: String, CodingKey {
+        case status, version, deviceName, serverTime
+        case enabledTypesWire = "enabledTypes"
     }
 }
 
 struct TypesResponse: Decodable {
-    let enabledTypes: [HealthDataType]
+    let enabledTypesWire: EnabledTypesWire
 
-    private enum CodingKeys: String, CodingKey { case enabledTypes }
+    var enabledTypes: [HealthDataType] { enabledTypesWire.known }
 
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        let rawTypes = try c.decode([String].self, forKey: .enabledTypes)
-        enabledTypes = rawTypes.compactMap { HealthDataType(rawValue: $0) }
+    private enum CodingKeys: String, CodingKey {
+        case enabledTypesWire = "enabledTypes"
     }
 }
 
