@@ -14,6 +14,11 @@ struct ContentView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \AuditEventRecord.timestamp, order: .reverse) private var auditEvents: [AuditEventRecord]
+    @State private var typeSearch: String = ""
+    @State private var expandedCategories: Set<HealthDataType.Category> = Set(
+        HealthDataType.Category.allCases.filter { $0.defaultExpanded }
+    )
+    @State private var showSensitiveConfirmation: HealthDataType.Preset?
 
     var body: some View {
         NavigationStack {
@@ -287,14 +292,150 @@ struct ContentView: View {
     }
 
     private var dataTypesSection: some View {
-        Section("Shared Data Types") {
-            ForEach(HealthDataType.allCases) { type in
-                Toggle(type.displayName, isOn: Binding(
-                    get: { appState.syncConfiguration.enabledTypes.contains(type) },
-                    set: { newValue in appState.toggleType(type, enabled: newValue) }
-                ))
+        Section {
+            presetMenu
+            searchField
+            ForEach(HealthDataType.Category.allCases, id: \.self) { category in
+                if !typesIn(category).isEmpty {
+                    categoryRow(for: category)
+                }
+            }
+        } header: {
+            HStack {
+                Text("Shared Data Types")
+                Spacer()
+                Text("\(appState.syncConfiguration.enabledTypes.count) of \(HealthDataType.allCases.count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } footer: {
+            Text("Sensitive types (reproductive health, mental-health symptoms, alcohol, cardiac event alerts) are off by default. Enable them deliberately.")
+                .font(.caption)
+        }
+        .alert("Enable sensitive types?", isPresented: Binding(
+            get: { showSensitiveConfirmation != nil },
+            set: { if !$0 { showSensitiveConfirmation = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { showSensitiveConfirmation = nil }
+            Button("Apply Preset", role: .destructive) {
+                if let preset = showSensitiveConfirmation {
+                    applyPreset(preset)
+                }
+                showSensitiveConfirmation = nil
+            }
+        } message: {
+            Text("This preset enables types covering sensitive health data including reproductive health and cardiac events. You can disable individual types afterward.")
+        }
+    }
+
+    private var presetMenu: some View {
+        Menu {
+            ForEach(HealthDataType.Preset.allCases, id: \.self) { preset in
+                Button {
+                    HapticFeedback.impact(.light)
+                    let hasSensitive = preset.types.contains(where: { $0.isSensitive })
+                    if hasSensitive {
+                        showSensitiveConfirmation = preset
+                    } else {
+                        applyPreset(preset)
+                    }
+                } label: {
+                    Label(preset.displayName, systemImage: preset.iconSystemName)
+                }
+            }
+            Divider()
+            Button(role: .destructive) {
+                HapticFeedback.impact(.light)
+                appState.setEnabledTypes([])
+            } label: {
+                Label("Disable All", systemImage: "minus.circle")
+            }
+        } label: {
+            HStack {
+                Image(systemName: "wand.and.stars")
+                Text("Quick Presets")
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var searchField: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search types", text: $typeSearch)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            if !typeSearch.isEmpty {
+                Button {
+                    typeSearch = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func categoryRow(for category: HealthDataType.Category) -> some View {
+        let types = typesIn(category)
+        let enabledCount = types.filter { appState.syncConfiguration.enabledTypes.contains($0) }.count
+        let isExpanded = Binding(
+            get: { expandedCategories.contains(category) || !typeSearch.isEmpty },
+            set: { newValue in
+                if newValue { expandedCategories.insert(category) }
+                else { expandedCategories.remove(category) }
+            }
+        )
+
+        return DisclosureGroup(isExpanded: isExpanded) {
+            ForEach(types) { type in
+                typeToggleRow(type)
+            }
+        } label: {
+            HStack {
+                Image(systemName: category.iconSystemName)
+                    .foregroundStyle(.tint)
+                    .frame(width: 24)
+                Text(category.displayName)
+                Spacer()
+                Text("\(enabledCount)/\(types.count)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func typeToggleRow(_ type: HealthDataType) -> some View {
+        Toggle(isOn: Binding(
+            get: { appState.syncConfiguration.enabledTypes.contains(type) },
+            set: { newValue in appState.toggleType(type, enabled: newValue) }
+        )) {
+            HStack(spacing: 8) {
+                Text(type.displayName)
+                if type.isSensitive {
+                    Image(systemName: "lock.shield")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .accessibilityLabel("Sensitive")
+                }
+            }
+        }
+    }
+
+    private func typesIn(_ category: HealthDataType.Category) -> [HealthDataType] {
+        let all = HealthDataType.allCases.filter { $0.category == category }
+        guard !typeSearch.isEmpty else { return all }
+        let q = typeSearch.lowercased()
+        return all.filter { $0.displayName.lowercased().contains(q) || $0.rawValue.lowercased().contains(q) }
+    }
+
+    private func applyPreset(_ preset: HealthDataType.Preset) {
+        appState.setEnabledTypes(Array(preset.types))
     }
 
     private var auditSection: some View {

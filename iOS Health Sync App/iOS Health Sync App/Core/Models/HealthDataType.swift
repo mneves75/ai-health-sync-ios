@@ -622,4 +622,225 @@ enum HealthDataType: String, CaseIterable, Codable, Sendable, Identifiable {
             return false
         }
     }
+
+    // MARK: - UI categorization
+
+    /// Top-level grouping for the data-type picker UI. With 178 cases a flat
+    /// toggle list is unusable; categories let the UI render collapsible groups.
+    var category: Category {
+        switch self {
+        case .steps, .distanceWalkingRunning, .distanceCycling, .activeEnergyBurned,
+             .basalEnergyBurned, .exerciseTime, .standHours, .flightsClimbed, .workouts,
+             .appleStandHour, .appleMoveTime,
+             .runningGroundContactTime, .runningStrideLength, .runningVerticalOscillation,
+             .runningPower, .runningSpeed,
+             .cyclingCadence, .cyclingPower, .cyclingSpeed, .cyclingFunctionalThresholdPower,
+             .distanceSwimming, .swimmingStrokeCount,
+             .distanceDownhillSnowSports, .distanceWheelchair, .pushCount,
+             .underwaterDepth, .waterTemperature, .nikeFuel, .physicalEffort:
+            return .activity
+
+        case .heartRate, .restingHeartRate, .walkingHeartRateAverage, .heartRateVariability,
+             .heartRateRecoveryOneMinute, .bloodPressureSystolic, .bloodPressureDiastolic,
+             .bloodOxygen, .peripheralPerfusionIndex, .vo2Max, .atrialFibrillationBurden,
+             .irregularHeartRhythmEvent, .highHeartRateEvent, .lowHeartRateEvent,
+             .lowCardioFitnessEvent:
+            return .cardiovascular
+
+        case .weight, .height, .bodyMassIndex, .bodyFatPercentage, .leanBodyMass,
+             .waistCircumference, .bodyTemperature, .basalBodyTemperature, .wristTemperature,
+             .electrodermalActivity:
+            return .bodyMeasurements
+
+        case .sleepAnalysis, .sleepInBed, .sleepAsleep, .sleepAwake, .sleepREM,
+             .sleepCore, .sleepDeep:
+            return .sleep
+
+        case .dietaryEnergyConsumed, .dietaryWater, .dietaryCaffeine, .dietaryProtein,
+             .dietaryFatTotal, .dietaryFatSaturated, .dietaryFatPolyunsaturated,
+             .dietaryFatMonounsaturated, .dietaryCholesterol, .dietaryCarbohydrates,
+             .dietaryFiber, .dietarySugar, .dietarySodium, .dietaryCalcium, .dietaryIron,
+             .dietaryMagnesium, .dietaryPotassium, .dietaryZinc, .dietaryPhosphorus,
+             .dietaryIodine, .dietarySelenium, .dietaryCopper, .dietaryManganese,
+             .dietaryChromium, .dietaryMolybdenum, .dietaryChloride, .dietaryVitaminA,
+             .dietaryVitaminB6, .dietaryVitaminB12, .dietaryVitaminC, .dietaryVitaminD,
+             .dietaryVitaminE, .dietaryVitaminK, .dietaryRiboflavin, .dietaryThiamin,
+             .dietaryNiacin, .dietaryFolate, .dietaryBiotin, .dietaryPantothenicAcid:
+            return .nutrition
+
+        case .abdominalCramps, .acne, .appetiteChanges, .bladderIncontinence, .bloating,
+             .breastPain, .chestTightnessOrPain, .chills, .constipation, .coughing,
+             .diarrhea, .dizziness, .drySkin, .fainting, .fatigue, .fever,
+             .generalizedBodyAche, .hairLoss, .headache, .heartburn, .hotFlashes,
+             .lossOfSmell, .lossOfTaste, .lowerBackPain, .memoryLapse, .moodChanges,
+             .nausea, .nightSweats, .pelvicPain, .rapidPoundingOrFlutteringHeartbeat,
+             .runnyNose, .shortnessOfBreath, .sinusCongestion, .skippedHeartbeat,
+             .sleepChanges, .soreThroat, .vaginalDryness, .vomiting, .wheezing:
+            return .symptoms
+
+        case .menstrualFlow, .intermenstrualBleeding, .infrequentMenstrualCycles,
+             .irregularMenstrualCycles, .persistentIntermenstrualBleeding,
+             .prolongedMenstrualPeriods, .ovulationTestResult, .pregnancyTestResult,
+             .progesteroneTestResult, .sexualActivity, .cervicalMucusQuality,
+             .contraceptive, .lactation, .bleedingAfterPregnancy, .bleedingDuringPregnancy:
+            return .reproductiveHealth
+
+        case .mindfulMinutes:
+            return .mentalHealth
+
+        case .walkingSpeed, .walkingStepLength, .walkingAsymmetryPercentage,
+             .walkingDoubleSupportPercentage, .stairAscentSpeed, .stairDescentSpeed,
+             .sixMinuteWalkTestDistance, .appleWalkingSteadiness, .appleWalkingSteadinessEvent,
+             .environmentalAudioExposure, .headphoneAudioExposure,
+             .environmentalAudioExposureEvent, .headphoneAudioExposureEvent,
+             .environmentalSoundReduction:
+            return .mobilityAndHearing
+
+        case .respiratoryRate, .forcedExpiratoryVolume1, .forcedVitalCapacity,
+             .peakExpiratoryFlowRate, .inhalerUsage, .bloodGlucose, .insulinDelivery:
+            return .respiratoryAndMetabolic
+
+        case .timeInDaylight, .uvExposure, .handwashingEvent, .toothbrushingEvent,
+             .numberOfTimesFallen, .numberOfAlcoholicBeverages, .bloodAlcoholContent:
+            return .lifestyle
+        }
+    }
+
+    /// Sensitive types are off by default and must be enabled deliberately.
+    /// Includes reproductive health, alcohol, mental-health symptoms, and
+    /// medical-grade cardiac alerts whose presence is itself diagnostic.
+    var isSensitive: Bool {
+        switch self {
+        case .menstrualFlow, .intermenstrualBleeding, .infrequentMenstrualCycles,
+             .irregularMenstrualCycles, .persistentIntermenstrualBleeding,
+             .prolongedMenstrualPeriods, .ovulationTestResult, .pregnancyTestResult,
+             .progesteroneTestResult, .sexualActivity, .cervicalMucusQuality,
+             .contraceptive, .lactation, .bleedingAfterPregnancy, .bleedingDuringPregnancy,
+             .moodChanges, .memoryLapse, .sleepChanges, .appetiteChanges,
+             .numberOfAlcoholicBeverages, .bloodAlcoholContent,
+             .irregularHeartRhythmEvent, .highHeartRateEvent, .lowHeartRateEvent:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Curated default-enabled set for first launch. Sensitive types are excluded.
+    /// All other 168 types are off by default; users opt in via the picker UI.
+    static let defaultEnabled: Set<HealthDataType> = [
+        .steps, .distanceWalkingRunning, .activeEnergyBurned, .exerciseTime,
+        .heartRate, .restingHeartRate, .sleepAnalysis, .workouts,
+        .flightsClimbed, .weight
+    ]
+
+    var isDefaultEnabled: Bool { Self.defaultEnabled.contains(self) }
+
+    enum Category: String, CaseIterable, Sendable {
+        case activity
+        case cardiovascular
+        case bodyMeasurements
+        case sleep
+        case nutrition
+        case symptoms
+        case reproductiveHealth
+        case mentalHealth
+        case mobilityAndHearing
+        case respiratoryAndMetabolic
+        case lifestyle
+
+        var displayName: String {
+            switch self {
+            case .activity:                 return "Activity & Workouts"
+            case .cardiovascular:           return "Cardiovascular"
+            case .bodyMeasurements:         return "Body Measurements"
+            case .sleep:                    return "Sleep"
+            case .nutrition:                return "Nutrition"
+            case .symptoms:                 return "Symptoms"
+            case .reproductiveHealth:       return "Reproductive Health"
+            case .mentalHealth:             return "Mental Health"
+            case .mobilityAndHearing:       return "Mobility & Hearing"
+            case .respiratoryAndMetabolic:  return "Respiratory & Metabolic"
+            case .lifestyle:                return "Lifestyle"
+            }
+        }
+
+        var iconSystemName: String {
+            switch self {
+            case .activity:                 return "figure.run"
+            case .cardiovascular:           return "heart.fill"
+            case .bodyMeasurements:         return "scalemass.fill"
+            case .sleep:                    return "bed.double.fill"
+            case .nutrition:                return "fork.knife"
+            case .symptoms:                 return "thermometer"
+            case .reproductiveHealth:       return "drop.fill"
+            case .mentalHealth:             return "brain.head.profile"
+            case .mobilityAndHearing:       return "ear.fill"
+            case .respiratoryAndMetabolic:  return "lungs.fill"
+            case .lifestyle:                return "sun.max.fill"
+            }
+        }
+
+        /// Categories that open by default. Most are collapsed to keep the
+        /// screen scannable.
+        var defaultExpanded: Bool {
+            switch self {
+            case .activity, .cardiovascular, .sleep:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    /// Quick-configuration presets for common personas. Applying a preset
+    /// replaces the entire enabled set with the preset's curated types.
+    enum Preset: String, CaseIterable, Sendable {
+        case general
+        case athlete
+        case cycleTracking
+        case conditionsMonitoring
+
+        var displayName: String {
+            switch self {
+            case .general:                  return "General Wellness"
+            case .athlete:                  return "Athlete"
+            case .cycleTracking:            return "Cycle Tracking"
+            case .conditionsMonitoring:     return "Health Conditions"
+            }
+        }
+
+        var iconSystemName: String {
+            switch self {
+            case .general:                  return "heart.text.square"
+            case .athlete:                  return "figure.run.circle.fill"
+            case .cycleTracking:            return "calendar.badge.clock"
+            case .conditionsMonitoring:     return "stethoscope"
+            }
+        }
+
+        var types: Set<HealthDataType> {
+            switch self {
+            case .general:
+                return HealthDataType.defaultEnabled
+            case .athlete:
+                let athleteCats: Set<HealthDataType.Category> = [.activity, .cardiovascular, .sleep, .mobilityAndHearing]
+                return Set(HealthDataType.allCases.filter { athleteCats.contains($0.category) && !$0.isSensitive })
+            case .cycleTracking:
+                return Set(HealthDataType.allCases.filter { $0.category == .reproductiveHealth })
+                    .union([.basalBodyTemperature, .heartRate, .sleepAnalysis,
+                            .moodChanges, .breastPain, .pelvicPain, .hotFlashes])
+            case .conditionsMonitoring:
+                return [
+                    .heartRate, .restingHeartRate, .heartRateVariability,
+                    .bloodPressureSystolic, .bloodPressureDiastolic, .bloodOxygen,
+                    .atrialFibrillationBurden, .irregularHeartRhythmEvent,
+                    .highHeartRateEvent, .lowHeartRateEvent,
+                    .bloodGlucose, .insulinDelivery,
+                    .forcedExpiratoryVolume1, .forcedVitalCapacity,
+                    .peakExpiratoryFlowRate, .inhalerUsage,
+                    .bodyTemperature, .basalBodyTemperature
+                ]
+            }
+        }
+    }
 }

@@ -177,6 +177,16 @@ final class AppState {
         }
     }
 
+    /// Replaces the entire enabled-types set in one update. Used by preset application.
+    func setEnabledTypes(_ types: [HealthDataType]) {
+        syncConfiguration.enabledTypes = types
+        do {
+            try modelContainer.mainContext.save()
+        } catch {
+            AppLoggers.app.error("Failed to save type set: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
     func startServer() async {
         do {
             isServerStarting = true

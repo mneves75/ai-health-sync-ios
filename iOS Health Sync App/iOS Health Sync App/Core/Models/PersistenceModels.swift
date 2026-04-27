@@ -11,7 +11,11 @@ final class SyncConfiguration {
     var lastExportAt: Date?
     var createdAt: Date
 
-    init(id: UUID = UUID(), enabledTypes: [HealthDataType] = HealthDataType.allCases, lastExportAt: Date? = nil, createdAt: Date = Date()) {
+    // First-launch default is the curated 10-type set from HealthDataType.defaultEnabled.
+    // The previous default (allCases) triggered a HealthKit auth dialog spanning every
+    // category Apple Health exposes, including sensitive ones (reproductive health,
+    // mental-health symptoms, alcohol). Users opt in to additional types via the picker.
+    init(id: UUID = UUID(), enabledTypes: [HealthDataType] = Array(HealthDataType.defaultEnabled), lastExportAt: Date? = nil, createdAt: Date = Date()) {
         self.id = id
         self.enabledTypesCSV = Self.serialize(types: enabledTypes)
         self.lastExportAt = lastExportAt
