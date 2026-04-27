@@ -9,6 +9,7 @@ import SwiftUI
 struct iOS_Health_Sync_AppApp: App {
     private let modelContainer: ModelContainer
     @State private var appState: AppState
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
 
     init() {
         do {
@@ -22,21 +23,25 @@ struct iOS_Health_Sync_AppApp: App {
             self.modelContainer = container
             self._appState = State(initialValue: AppState(modelContainer: container))
         } catch {
-            // Log the error for debugging
             AppLoggers.app.fault("Failed to create ModelContainer: \(error.localizedDescription, privacy: .public)")
-            // Fatal error in production - cannot operate without database
             fatalError("Failed to create ModelContainer: \(error)")
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(appState)
-                .modelContainer(modelContainer)
-                .task {
-                    appState.startNotificationObservers()
+            Group {
+                if hasCompletedOnboarding {
+                    ContentView()
+                } else {
+                    OnboardingView()
                 }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+            .task {
+                appState.startNotificationObservers()
+            }
         }
     }
 }

@@ -13,6 +13,14 @@ import SwiftUI
 /// displayed QR doesn't match the current pairing code after refresh.
 struct QRCodeView: View {
     let text: String
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// Larger on iPad / wide layouts, compact on iPhone. The QR scales to fit the
+    /// available width up to a sensible cap so it stays scannable from across a desk
+    /// on iPad without ballooning on iPhone.
+    private var maxSide: CGFloat {
+        sizeClass == .regular ? 360 : 240
+    }
 
     var body: some View {
         // Compute QR image directly from current text - no caching.
@@ -26,10 +34,11 @@ struct QRCodeView: View {
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 220, maxHeight: 220)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(maxWidth: maxSide, maxHeight: maxSide)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .accessibilityLabel("Pairing QR code")
+                    .accessibilityHint("Scan with the HealthSync CLI on your Mac to pair.")
             } else {
-                // Error state - render failed
                 VStack(spacing: 8) {
                     Image(systemName: "qrcode")
                         .font(.largeTitle)
@@ -38,8 +47,9 @@ struct QRCodeView: View {
                         .foregroundStyle(.secondary)
                         .font(.caption)
                 }
-                .frame(width: 220, height: 220)
+                .frame(width: maxSide, height: maxSide)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }

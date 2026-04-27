@@ -59,6 +59,19 @@ struct AboutView: View {
                 FeatureRow(icon: "heart.fill", color: .pink, title: "HealthKit Integration", description: "Steps, heart rate, sleep, workouts, and more")
             }
 
+            // Resources Section
+            Section("Resources") {
+                Link(destination: URL(string: "https://github.com/mneves75/ai-health-sync-ios")!) {
+                    Label("Source Code on GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                }
+                Link(destination: URL(string: "https://github.com/mneves75/ai-health-sync-ios/releases")!) {
+                    Label("Get HealthSync CLI for Mac", systemImage: "arrow.down.circle")
+                }
+                Link(destination: URL(string: "https://github.com/mneves75/ai-health-sync-ios/issues/new")!) {
+                    Label("Send Feedback", systemImage: "envelope")
+                }
+            }
+
             // Developer Section
             Section("Developer") {
                 LabeledContent("Created by", value: "Marcus Neves")

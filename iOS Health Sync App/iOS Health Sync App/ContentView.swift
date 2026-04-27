@@ -59,7 +59,7 @@ struct ContentView: View {
             // We can only know if we've requested (user saw the dialog), not if they approved.
             LabeledContent("HealthKit", value: appState.healthAuthorizationStatus ? "Requested" : "Not Requested")
             if let lastExport = appState.syncConfiguration.lastExportAt {
-                LabeledContent("Last Export", value: lastExport.formatted())
+                LabeledContent("Last Sync", value: lastExport.formatted())
             }
         }
     }
@@ -80,7 +80,7 @@ struct ContentView: View {
     }
 
     private var serverSection: some View {
-        Section("Sharing Server") {
+        Section {
             // Status indicator with animated symbol
             HStack {
                 Image(systemName: appState.isServerRunning ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
@@ -126,6 +126,15 @@ struct ContentView: View {
                 .liquidGlassButtonStyle(.prominent)
                 .disabled(appState.isServerStarting)
             }
+        } header: {
+            Text("Sharing Server")
+        } footer: {
+            if appState.isServerRunning {
+                Label("Screen stays on while sharing to keep the connection alive. This will use more battery than usual.",
+                      systemImage: "sun.max.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .animation(.smooth, value: appState.isServerRunning)
     }
@@ -135,6 +144,63 @@ struct ContentView: View {
     @State private var qrPayloadToShare: String?
     @State private var qrExpirationToShare: Date?
     @State private var showCopiedFeedback = false
+    @State private var showRevokeConfirmation = false
+    @State private var pendingSensitiveType: HealthDataType?
+    @State private var showFingerprintExpanded = false
+
+    /// Live countdown for pairing-code expiry. Refreshes every second so users see
+    /// urgency. Goes orange < 60s, red when expired.
+    @ViewBuilder
+    private func expirationCountdown(for expiresAt: Date) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = expiresAt.timeIntervalSince(context.date)
+            let expired = remaining <= 0
+            let urgent = remaining < 60 && !expired
+            LabeledContent("Expires") {
+                if expired {
+                    Text("Expired — tap Refresh Code")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                } else {
+                    Text(expiresAt, style: .relative)
+                        .foregroundStyle(urgent ? .orange : .secondary)
+                        .font(urgent ? .callout.weight(.semibold) : .callout)
+                        .monospacedDigit()
+                }
+            }
+        }
+    }
+
+    /// Fingerprint row that expands on tap to show the full SHA-256 in monospaced
+    /// body text with a copy button — required for the user to verify it against
+    /// the Mac CLI display during pairing.
+    @ViewBuilder
+    private func fingerprintRow(_ fingerprint: String) -> some View {
+        DisclosureGroup(isExpanded: $showFingerprintExpanded) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(fingerprint)
+                    .font(.system(.footnote, design: .monospaced))
+                    .textSelection(.enabled)
+                Button {
+                    UIPasteboard.general.string = fingerprint
+                    HapticFeedback.notification(.success)
+                } label: {
+                    Label("Copy Fingerprint", systemImage: "doc.on.doc")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        } label: {
+            LabeledContent("Fingerprint") {
+                Text(fingerprint)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
+    }
 
     private var pairingSection: some View {
         Section("Pairing") {
@@ -149,14 +215,8 @@ struct ContentView: View {
                 // Pairing details
                 LabeledContent("Code", value: qr.code)
                     .font(.system(.body, design: .monospaced))
-                LabeledContent("Expires", value: qr.expiresAt.formatted())
-                LabeledContent("Fingerprint") {
-                    Text(qr.certificateFingerprint)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
+                expirationCountdown(for: qr.expiresAt)
+                fingerprintRow(qr.certificateFingerprint)
 
                 // Action buttons - separate rows for clear tap targets
                 Button {
@@ -326,6 +386,22 @@ struct ContentView: View {
         } message: {
             Text("This preset enables types covering sensitive health data including reproductive health and cardiac events. You can disable individual types afterward.")
         }
+        .alert("Enable sensitive category?", isPresented: Binding(
+            get: { pendingSensitiveType != nil },
+            set: { if !$0 { pendingSensitiveType = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { pendingSensitiveType = nil }
+            Button("Enable", role: .destructive) {
+                if let type = pendingSensitiveType {
+                    appState.toggleType(type, enabled: true)
+                }
+                pendingSensitiveType = nil
+            }
+        } message: {
+            if let type = pendingSensitiveType {
+                Text("Enabling \(type.displayName) lets HealthSync read this category from Apple Health and transmit it to your paired Mac. You can disable it again at any time.")
+            }
+        }
     }
 
     private var presetMenu: some View {
@@ -355,8 +431,7 @@ struct ContentView: View {
                 Image(systemName: "wand.and.stars")
                 Text("Quick Presets")
                 Spacer()
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption)
+                Image(systemName: "ellipsis.circle")
                     .foregroundStyle(.secondary)
             }
         }
@@ -411,20 +486,32 @@ struct ContentView: View {
     }
 
     private func typeToggleRow(_ type: HealthDataType) -> some View {
-        Toggle(isOn: Binding(
-            get: { appState.syncConfiguration.enabledTypes.contains(type) },
-            set: { newValue in appState.toggleType(type, enabled: newValue) }
+        let isOn = appState.syncConfiguration.enabledTypes.contains(type)
+        return Toggle(isOn: Binding(
+            get: { isOn },
+            set: { newValue in
+                // Sensitive types require explicit confirmation when turning ON.
+                // Turning off is always immediate.
+                if newValue && type.isSensitive && !isOn {
+                    pendingSensitiveType = type
+                } else {
+                    appState.toggleType(type, enabled: newValue)
+                }
+            }
         )) {
             HStack(spacing: 8) {
                 Text(type.displayName)
                 if type.isSensitive {
-                    Image(systemName: "lock.shield")
-                        .font(.caption)
+                    Text("Sensitive")
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(.orange.opacity(0.18)))
                         .foregroundStyle(.orange)
-                        .accessibilityLabel("Sensitive")
                 }
             }
         }
+        .accessibilityHint(type.isSensitive ? "Sensitive health data category" : "")
     }
 
     private func typesIn(_ category: HealthDataType.Category) -> [HealthDataType] {
@@ -442,7 +529,7 @@ struct ContentView: View {
         Section("Audit") {
             Button(role: .destructive) {
                 HapticFeedback.notification(.warning)
-                Task { await appState.revokeAllPairings() }
+                showRevokeConfirmation = true
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "xmark.shield.fill")
@@ -450,6 +537,18 @@ struct ContentView: View {
                 }
             }
             .liquidGlassButtonStyle(.standard)
+            .confirmationDialog(
+                "Revoke all pairings?",
+                isPresented: $showRevokeConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Revoke All", role: .destructive) {
+                    Task { await appState.revokeAllPairings() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Paired Macs will lose access. They will need to scan a new QR code to reconnect. This cannot be undone.")
+            }
 
             if auditEvents.isEmpty {
                 ContentUnavailableView {
@@ -460,53 +559,93 @@ struct ContentView: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(auditEvents.prefix(10), id: \.id) { event in
-                    HStack {
-                        Image(systemName: auditEventIcon(for: event.eventType))
-                            .foregroundStyle(auditEventColor(for: event.eventType))
-                            .frame(width: 24)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(event.eventType)
-                                .font(.subheadline)
-                            Text(event.timestamp.formatted(date: .abbreviated, time: .shortened))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    NavigationLink {
+                        AuditEventDetailView(event: event)
+                    } label: {
+                        HStack {
+                            Image(systemName: auditEventIcon(for: event.eventType))
+                                .foregroundStyle(auditEventColor(for: event.eventType))
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(auditEventLabel(for: event.eventType))
+                                    .font(.subheadline)
+                                Text(event.timestamp.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                    }
+                }
+                if auditEvents.count > 10 {
+                    NavigationLink {
+                        AuditLogView()
+                    } label: {
+                        Label("View All \(auditEvents.count) Events", systemImage: "list.bullet.rectangle")
+                            .font(.subheadline)
                     }
                 }
             }
         }
     }
 
-    /// Returns appropriate SF Symbol for audit event type
+    /// Returns appropriate SF Symbol for audit event type. Matches by exact event name
+    /// and falls back to category prefix (the part before the dot). The previous
+    /// implementation used `.contains("auth")` which also matched `auth.healthkit_revoke`,
+    /// causing the auth and revoke branches to collide.
     private func auditEventIcon(for eventType: String) -> String {
+        // Specific matches first
         switch eventType {
-        case let type where type.contains("auth"):
-            return "person.badge.key.fill"
-        case let type where type.contains("server"):
-            return "server.rack"
-        case let type where type.contains("health"):
-            return "heart.fill"
-        case let type where type.contains("revoke"):
-            return "xmark.circle.fill"
-        default:
-            return "doc.text.fill"
+        case "auth.revoke":                  return "xmark.shield.fill"
+        case "auth.healthkit":                return "heart.text.square.fill"
+        case "auth.pair":                     return "person.badge.key.fill"
+        case "api.server_start":              return "play.circle.fill"
+        case "api.server_stop":               return "stop.circle.fill"
+        case "api.request":                   return "arrow.down.circle"
+        case "api.request_invalid":           return "exclamationmark.circle.fill"
+        case "security.unauthorized_access":  return "lock.trianglebadge.exclamationmark.fill"
+        case "security.rate_limit_exceeded":  return "speedometer"
+        case "data.read":                     return "doc.text.fill"
+        case "data.routes_read":              return "map.fill"
+        default: break
+        }
+        // Category prefix fallback
+        switch eventType.split(separator: ".").first.map(String.init) ?? "" {
+        case "auth":     return "person.badge.key.fill"
+        case "api":      return "server.rack"
+        case "security": return "lock.shield.fill"
+        case "data":     return "doc.text.fill"
+        default:         return "info.circle"
         }
     }
 
-    /// Returns appropriate color for audit event type
+    /// Returns appropriate color for audit event type. Severity precedence:
+    /// security alerts (red) > revoke (red) > data access (orange) > auth (blue) > api (green).
     private func auditEventColor(for eventType: String) -> Color {
+        if eventType.hasPrefix("security.") { return .red }
+        if eventType == "auth.revoke" || eventType == "api.request_invalid" { return .red }
+        switch eventType.split(separator: ".").first.map(String.init) ?? "" {
+        case "data":     return .orange
+        case "auth":     return .blue
+        case "api":      return .green
+        default:         return .secondary
+        }
+    }
+
+    /// Human-readable label for an audit event type.
+    private func auditEventLabel(for eventType: String) -> String {
         switch eventType {
-        case let type where type.contains("revoke"):
-            return .red
-        case let type where type.contains("auth"):
-            return .blue
-        case let type where type.contains("server"):
-            return .green
-        case let type where type.contains("health"):
-            return .pink
-        default:
-            return .secondary
+        case "auth.healthkit":                return "HealthKit Authorization"
+        case "auth.pair":                     return "Device Paired"
+        case "auth.revoke":                   return "Pairings Revoked"
+        case "api.server_start":              return "Server Started"
+        case "api.server_stop":               return "Server Stopped"
+        case "api.request":                   return "API Request"
+        case "api.request_invalid":           return "Invalid Request"
+        case "security.unauthorized_access":  return "Unauthorized Access Attempt"
+        case "security.rate_limit_exceeded":  return "Rate Limit Exceeded"
+        case "data.read":                     return "Health Data Read"
+        case "data.routes_read":              return "GPS Routes Read"
+        default:                              return eventType
         }
     }
 
@@ -626,20 +765,42 @@ enum HapticFeedback {
         }
     }
 
-    /// Triggers impact haptic feedback
-    /// Uses modern iOS 17+ API that doesn't require a view reference
+    // Cached generators with prepare() called eagerly so the first tap doesn't
+    // see the typical 50-100ms warmup delay. iOS expects prepare() before each
+    // expected feedback for best latency.
+    private static let impactLight = UIImpactFeedbackGenerator(style: .light)
+    private static let impactMedium = UIImpactFeedbackGenerator(style: .medium)
+    private static let impactHeavy = UIImpactFeedbackGenerator(style: .heavy)
+    private static let impactSoft = UIImpactFeedbackGenerator(style: .soft)
+    private static let impactRigid = UIImpactFeedbackGenerator(style: .rigid)
+    private static let notifier = UINotificationFeedbackGenerator()
+    private static let selector = UISelectionFeedbackGenerator()
+
+    /// Triggers impact haptic feedback. Cached generator + prepare() eliminates
+    /// first-tap latency.
     static func impact(_ style: ImpactStyle) {
-        UIImpactFeedbackGenerator(style: style.uiStyle).impactOccurred()
+        let g: UIImpactFeedbackGenerator
+        switch style {
+        case .light:  g = impactLight
+        case .medium: g = impactMedium
+        case .heavy:  g = impactHeavy
+        case .soft:   g = impactSoft
+        case .rigid:  g = impactRigid
+        }
+        g.prepare()
+        g.impactOccurred()
     }
 
-    /// Triggers notification haptic feedback
+    /// Triggers notification haptic feedback (success / warning / error).
     static func notification(_ type: NotificationType) {
-        UINotificationFeedbackGenerator().notificationOccurred(type.uiType)
+        notifier.prepare()
+        notifier.notificationOccurred(type.uiType)
     }
 
-    /// Triggers selection haptic feedback (subtle tick)
+    /// Triggers selection haptic feedback (subtle tick).
     static func selection() {
-        UISelectionFeedbackGenerator().selectionChanged()
+        selector.prepare()
+        selector.selectionChanged()
     }
 }
 

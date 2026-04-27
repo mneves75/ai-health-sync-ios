@@ -19,11 +19,11 @@
 		<string>_healthsync._tcp</string>
 	</array>
 	<key>NSHealthShareUsageDescription</key>
-	<string>HealthSync needs read access to your Health data to share selected metrics with your Mac over your local network.</string>
+	<string>HealthSync reads only the Health categories you explicitly enable in the app, including activity, vitals, and any sensitive categories you opt into (such as reproductive health or symptoms). Data is transmitted only to your paired Mac over an encrypted local-network connection — never to any external server. You can revoke access at any time in Settings → Health → HealthSync.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>HealthSync does not write Health data. This permission is required by HealthKit to manage access.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>HealthSync uses your local network to share Health data with your Mac.</string>
+	<string>HealthSync needs your local network to discover and pair with the HealthSync CLI on your Mac. No data is sent to the public internet.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
