@@ -363,6 +363,7 @@ private extension HKWorkoutActivityType {
         case .waterSports: return "waterSports"
         case .surfingSports: return "surfingSports"
         case .paddleSports: return "paddleSports"
+        case .sailing: return "sailing"
         case .swimBikeRun: return "swimBikeRun"
         case .underwaterDiving: return "underwaterDiving"
 
