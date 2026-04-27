@@ -82,6 +82,8 @@ struct HealthSyncCLI {
             try await types(args: args)
         case "fetch":
             try await fetch(args: args)
+        case "analyze":
+            try await analyze(args: args)
         default:
             try usage()
         }
@@ -120,6 +122,8 @@ struct HealthSyncCLI {
           status [--dry-run]               Fetch server status
           types [--dry-run]                Fetch enabled data types
           fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--dry-run]  (default: csv)
+          analyze anomalies --input <file.csv> [--threshold <z>] [--only-anomalies] [--format csv|json]
+                                      Detect statistical outliers in health metrics (z-score)
           version, --version, -v           Show version information
 
         QUICK START:
@@ -878,6 +882,90 @@ private final class ServiceResolutionState: @unchecked Sendable {
         let cont = _continuation
         lock.unlock()
         cont?.resume(returning: nil)
+    }
+}
+
+// MARK: - Analyze command
+
+extension HealthSyncCLI {
+    static func analyze(args: [String]) async throws {
+        guard let subcommand = args.first else {
+            fputs("Usage: healthsync analyze <subcommand>\n  Subcommands: anomalies\n", stderr)
+            exit(1)
+        }
+        switch subcommand {
+        case "anomalies":
+            try analyzeAnomalies(args: Array(args.dropFirst()))
+        default:
+            fputs("Unknown analyze subcommand '\(subcommand)'. Available: anomalies\n", stderr)
+            exit(1)
+        }
+    }
+
+    static func analyzeAnomalies(args: [String]) throws {
+        let options = try parseOptions(args)
+
+        guard let inputPath = options["--input"] else {
+            fputs("""
+            Usage: healthsync analyze anomalies --input <file.csv> [options]
+
+            Options:
+              --threshold <z>    Z-score threshold for anomaly flag (default: 2.5)
+              --only-anomalies   Print only flagged rows
+              --format csv|json  Output format (default: csv)
+
+            Input CSV: output of 'healthsync fetch' (requires type, startDate, value columns).
+            """, stderr)
+            fputs("\n", stderr)
+            exit(1)
+        }
+
+        let format        = options["--format"] ?? "csv"
+        let onlyAnomalies = options["--only-anomalies"] == "true"
+        let threshold     = options["--threshold"].flatMap(Double.init) ?? 2.5
+
+        guard format == "csv" || format == "json" else {
+            fputs("Error: --format must be csv or json\n", stderr)
+            exit(1)
+        }
+        guard threshold > 0 else {
+            fputs("Error: --threshold must be a positive number\n", stderr)
+            exit(1)
+        }
+
+        let url = URL(fileURLWithPath: (inputPath as NSString).expandingTildeInPath)
+        let text: String
+        do {
+            text = try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            fputs("Error reading \(inputPath): \(error.localizedDescription)\n", stderr)
+            exit(1)
+        }
+
+        let samples: [(date: String, type: String, value: Double)]
+        do {
+            samples = try parseAnomalyCSV(text)
+        } catch {
+            fputs("Error: \(error)\n", stderr)
+            exit(1)
+        }
+
+        guard !samples.isEmpty else {
+            fputs("Error: no data rows found in input file.\n", stderr)
+            exit(1)
+        }
+
+        let detector = AnomalyDetector(threshold: threshold)
+        let results  = detector.detect(samples: samples)
+
+        let flagged = results.filter { $0.isAnomaly }.count
+        fputs("Analyzed \(samples.count) samples — \(flagged) anomalies (z ≥ \(threshold))\n", stderr)
+
+        if format == "json" {
+            try printAnomalyJSON(results, onlyAnomalies: onlyAnomalies)
+        } else {
+            printAnomalyCSV(results, onlyAnomalies: onlyAnomalies)
+        }
     }
 }
 
