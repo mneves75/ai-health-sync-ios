@@ -5,6 +5,38 @@ All notable changes to AI Health Sync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **HealthKit type coverage** — 39 new data types including swimming, cardiac events (irregular rhythm, high/low HR), blood glucose, cycling FTP, hearing exposure, falls, running/cycling/walking dynamics (power, cadence, speed, ground contact, stride length), wrist temperature, AFib burden, time in daylight, and mindful minutes.
+- **GPS route export** — `/api/v1/health/routes` endpoint and `healthsync routes` CLI command produce per-workout GPX files via HKWorkoutRoute. Per-route, per-response, and per-workout caps prevent memory exhaustion.
+- **Apple Watch exclusives** — `healthsync ecg` and `healthsync hrv-series` commands export ECG voltage waveforms and R-R beat-series with computed SDNN/RMSSD.
+- **Structured workout export** — adaptive date-window batching with UUID dedup at boundaries; manifest file with version + counts.
+- **FIT binary parser** — pure-Swift parser for the ANT+ FIT format, with Suunto-specific (EPOC, Training Effect, Recovery, FusedSpeed) and Garmin-specific (TSS, Intensity Factor, running dynamics, HRV R-R) field decoders. New `healthsync import --fit` command.
+- **Training load model** — `healthsync analyze training-load` computes ATL/CTL/TSB using the standard TrainingPeaks `exp(-1/n)` exponential decay.
+- **Anomaly detection** — `healthsync analyze anomalies` flags z-score outliers per type from `healthsync fetch` CSV output.
+- **Suunto Sports Tracker integration** — OAuth2 with PKCE, CSRF-protected `state` parameter, and Keychain-backed token storage.
+- **Wire-protocol forward compatibility** — `EnabledTypesWire` decodes unknown type strings gracefully and surfaces them as warnings rather than failing.
+- **CLI version-skew warning** — `warnVersionSkew` fires from both `status` and `fetch` when the server protocol version isn't in the supported set.
+- **Unit tests** — 54 new tests covering TrainingLoad EWA convergence, AnomalyDetector statistics, FITParser headers and timestamp arithmetic, and HealthSampleMapper for new types.
+
+### Fixed
+
+- **Suunto OAuth port race** — `OAuthCallbackServer` no longer reads `NWListener.port` before the listener reaches `.ready`. Token refresh requests now percent-encode their form bodies. Listener bind failures surface immediately instead of after a 90-second timeout.
+- **FIT compressed timestamp rollover** — guards the `0xFFFFFFFF` invalid-value sentinel so it doesn't overflow to epoch 0 and corrupt subsequent records.
+- **Training load EWA formula** — switched from the linear `(1 - 1/n)` approximation to the exact `exp(-1/n)` decay (4.4% steady-state correction at 7 TSS/day).
+- **Anomaly CSV delimiter** — parser now uses semicolons to match `healthsync fetch --format csv` output.
+- **GPS route negative date range** — `handleRoutes` rejects `endDate <= startDate` with 400.
+- **GPS route memory cap** — added 100k-point per-response ceiling preventing 500k+ point responses on athletes with many recorded routes.
+- **NetworkServer startup race** — `stop()` cancels in-flight `NWListener` and unblocks `start()` waiters with a typed error instead of hanging.
+- **ECG / HRV "locked" hint** — error message now correctly references the Apple Watch (not iPhone) since both data sources are Watch-collected.
+- **Type enum parity** — iOS app and CLI now share all 60+ HealthKit types; previously each side had ~20 types the other did not.
+- **Cardiac event value documentation** — `HKCategorySample.value` encoding documented for cardiac events (`HKCategoryValuePresence`) and `mindfulMinutes` (always `notApplicable`).
+- **Manifest write** — `try?` replaced with `try` so encode errors surface instead of being silently dropped.
+- **Release CI version guard** — `MARKETING_VERSION` extraction now scopes to the Release config block; empty-string guards prevent silent grep failures from being misinterpreted; the App Store phone number placeholder check blocks accidental release with `REPLACE_WITH_REAL_PHONE_NUMBER`.
+- **App Store bundle ID** — corrected in metadata README to match the actual Xcode target identifier.
+
 ## [1.0.0] - 2026-02-26
 
 First public release of HealthSync Helper App.
