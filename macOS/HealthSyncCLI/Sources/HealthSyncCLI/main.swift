@@ -1160,4 +1160,24 @@ enum HealthDataType: String, CaseIterable, Codable {
     case bodyMassIndex
     case bodyFatPercentage
     case leanBodyMass
+    case waistCircumference
+    case runningGroundContactTime
+    case runningStrideLength
+    case runningVerticalOscillation
+    case runningPower
+    case runningSpeed
+    case cyclingCadence
+    case cyclingPower
+    case cyclingSpeed
+    case walkingSpeed
+    case walkingStepLength
+    case walkingAsymmetryPercentage
+    case walkingDoubleSupportPercentage
+    case stairAscentSpeed
+    case stairDescentSpeed
+    case wristTemperature
+    case atrialFibrillationBurden
+    case timeInDaylight
+    case physicalEffort
+    case mindfulMinutes
 }
