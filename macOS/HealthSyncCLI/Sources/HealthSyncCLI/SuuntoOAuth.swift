@@ -119,8 +119,11 @@ final class OAuthCallbackServer {
     let port: UInt16
     private var listener: NWListener?
     private var code: String?
+    private var returnedState: String?
     private var error: String?
     private let semaphore = DispatchSemaphore(value: 0)
+    private var handled = false
+    private let lock = NSLock()
 
     init(port: UInt16 = 0) throws {
         let params = NWParameters.tcp
@@ -132,7 +135,7 @@ final class OAuthCallbackServer {
         self.port = listener.port?.rawValue ?? port
     }
 
-    func waitForCallback(timeout: TimeInterval = 90) -> Result<String, SuuntoError> {
+    func waitForCallback(timeout: TimeInterval = 90) -> Result<(code: String, state: String?), SuuntoError> {
         listener?.newConnectionHandler = { [weak self] conn in
             conn.start(queue: .global())
             conn.receive(minimumIncompleteLength: 1, maximumLength: 4096) { data, _, _, _ in
@@ -145,13 +148,18 @@ final class OAuthCallbackServer {
                     var components = URLComponents()
                     components.query = query
                     let items = components.queryItems ?? []
+                    self?.lock.lock()
+                    guard self?.handled == false else { self?.lock.unlock(); conn.cancel(); return }
+                    self?.handled = true
                     if let errItem = items.first(where: { $0.name == "error" }) {
                         self?.error = errItem.value ?? "unknown"
                     } else if let codeItem = items.first(where: { $0.name == "code" }) {
                         self?.code = codeItem.value
+                        self?.returnedState = items.first(where: { $0.name == "state" })?.value
                     }
+                    self?.lock.unlock()
                 }
-                let body = "<html><body><h2>You can close this window.</h2></body></html>"
+                let body = "<html><body><h2>Authorized. You can close this window.</h2></body></html>"
                 let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
                 conn.send(content: response.data(using: .utf8), completion: .contentProcessed { _ in
                     conn.cancel()
@@ -167,7 +175,7 @@ final class OAuthCallbackServer {
 
         if result == .timedOut { return .failure(.oauthCallbackTimeout) }
         if let err = error    { return .failure(.oauthCallbackError(err)) }
-        if let code           { return .success(code) }
+        if let code           { return .success((code: code, state: returnedState)) }
         return .failure(.oauthCallbackTimeout)
     }
 }
@@ -194,6 +202,7 @@ struct SuuntoOAuthFlow {
         let redirectURI = "http://localhost:\(server.port)/callback"
         let verifier    = pkceVerifier()
         let challenge   = pkceChallenge(from: verifier)
+        let state       = Data((0..<16).map { _ in UInt8.random(in: 0...255) }).base64URLEncoded()
 
         var comps        = URLComponents(string: authorizationEndpoint)!
         comps.queryItems = [
@@ -202,7 +211,8 @@ struct SuuntoOAuthFlow {
             URLQueryItem(name: "redirect_uri",           value: redirectURI),
             URLQueryItem(name: "code_challenge",         value: challenge),
             URLQueryItem(name: "code_challenge_method",  value: "S256"),
-            URLQueryItem(name: "scope",                  value: "workout")
+            URLQueryItem(name: "scope",                  value: "workout"),
+            URLQueryItem(name: "state",                  value: state)
         ]
         let authURL = comps.url!.absoluteString
 
@@ -213,8 +223,11 @@ struct SuuntoOAuthFlow {
         let callbackResult = server.waitForCallback()
         switch callbackResult {
         case .failure(let e): throw e
-        case .success(let code):
-            return try await exchangeCode(code, verifier: verifier, redirectURI: redirectURI)
+        case .success(let result):
+            guard result.state == state else {
+                throw SuuntoError.oauthCallbackError("state mismatch — possible CSRF")
+            }
+            return try await exchangeCode(result.code, verifier: verifier, redirectURI: redirectURI)
         }
     }
 
