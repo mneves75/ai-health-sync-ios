@@ -82,6 +82,8 @@ struct HealthSyncCLI {
             try await types(args: args)
         case "fetch":
             try await fetch(args: args)
+        case "analyze":
+            try await analyze(args: args)
         default:
             try usage()
         }
@@ -120,6 +122,8 @@ struct HealthSyncCLI {
           status [--dry-run]               Fetch server status
           types [--dry-run]                Fetch enabled data types
           fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--dry-run]  (default: csv)
+          analyze training-load --input <file.csv> [--format csv|json]
+                                      Compute ATL/CTL/TSB from daily TSS CSV
           version, --version, -v           Show version information
 
         QUICK START:
@@ -878,6 +882,77 @@ private final class ServiceResolutionState: @unchecked Sendable {
         let cont = _continuation
         lock.unlock()
         cont?.resume(returning: nil)
+    }
+}
+
+// MARK: - Analyze command
+
+extension HealthSyncCLI {
+    static func analyze(args: [String]) async throws {
+        guard let subcommand = args.first else {
+            fputs("Usage: healthsync analyze <subcommand>\n  Subcommands: training-load\n", stderr)
+            exit(1)
+        }
+        switch subcommand {
+        case "training-load":
+            try analyzeTrainingLoad(args: Array(args.dropFirst()))
+        default:
+            fputs("Unknown analyze subcommand '\(subcommand)'. Available: training-load\n", stderr)
+            exit(1)
+        }
+    }
+
+    static func analyzeTrainingLoad(args: [String]) throws {
+        let options = try parseOptions(args)
+
+        guard let inputPath = options["--input"] else {
+            fputs("""
+            Usage: healthsync analyze training-load --input <file.csv> [--format csv|json]
+
+            Input CSV must have 'date' (YYYY-MM-DD) and 'tss' columns.
+            Rows are processed oldest-first; rows not in date order are accepted as-is.
+
+            Output columns: date, tss, atl (7-day EWA), ctl (42-day EWA), tsb (ctl−atl)
+            """, stderr)
+            fputs("\n", stderr)
+            exit(1)
+        }
+
+        let format = options["--format"] ?? "csv"
+        guard format == "csv" || format == "json" else {
+            fputs("Error: --format must be csv or json\n", stderr)
+            exit(1)
+        }
+
+        let url = URL(fileURLWithPath: (inputPath as NSString).expandingTildeInPath)
+        let text: String
+        do {
+            text = try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            fputs("Error reading \(inputPath): \(error.localizedDescription)\n", stderr)
+            exit(1)
+        }
+
+        let dailyTSS: [DailyTSS]
+        do {
+            dailyTSS = try parseTrainingLoadCSV(text)
+        } catch {
+            fputs("Error: \(error)\n", stderr)
+            exit(1)
+        }
+
+        guard !dailyTSS.isEmpty else {
+            fputs("Error: no data rows found in input file.\n", stderr)
+            exit(1)
+        }
+
+        let entries = TrainingLoadModel.compute(from: dailyTSS)
+
+        if format == "json" {
+            try printTrainingLoadJSON(entries)
+        } else {
+            printTrainingLoadCSV(entries)
+        }
     }
 }
 
