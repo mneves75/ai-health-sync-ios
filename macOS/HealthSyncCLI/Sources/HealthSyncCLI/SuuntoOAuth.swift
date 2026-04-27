@@ -116,26 +116,38 @@ private let tokenEndpoint          = "https://cloudapi-oauth.suunto.com/oauth/to
 
 /// Minimal single-shot HTTP server that captures the OAuth redirect.
 final class OAuthCallbackServer {
-    let port: UInt16
+    private(set) var port: UInt16 = 0
     private var listener: NWListener?
     private var code: String?
     private var returnedState: String?
     private var error: String?
     private let semaphore = DispatchSemaphore(value: 0)
+    private let portSemaphore = DispatchSemaphore(value: 0)
+    private var listenerFailed = false
     private var handled = false
     private let lock = NSLock()
 
-    init(port: UInt16 = 0) throws {
+    init(requestedPort: UInt16 = 0) throws {
         let params = NWParameters.tcp
         params.allowLocalEndpointReuse = true
-        let listener = try NWListener(using: params, on: NWEndpoint.Port(integerLiteral: port))
-        self.listener = listener
-
-        // Resolve actual port if 0 was requested
-        self.port = listener.port?.rawValue ?? port
+        listener = try NWListener(using: params, on: NWEndpoint.Port(integerLiteral: requestedPort))
     }
 
-    func waitForCallback(timeout: TimeInterval = 90) -> Result<(code: String, state: String?), SuuntoError> {
+    /// Start the listener and block until the OS assigns the actual port (or fails).
+    func start() throws {
+        listener?.stateUpdateHandler = { [weak self] state in
+            switch state {
+            case .ready:
+                self?.port = self?.listener?.port?.rawValue ?? 0
+                self?.portSemaphore.signal()
+            case .failed:
+                self?.listenerFailed = true
+                self?.portSemaphore.signal()
+                self?.semaphore.signal()
+            default:
+                break
+            }
+        }
         listener?.newConnectionHandler = { [weak self] conn in
             conn.start(queue: .global())
             conn.receive(minimumIncompleteLength: 1, maximumLength: 4096) { data, _, _, _ in
@@ -169,10 +181,15 @@ final class OAuthCallbackServer {
             }
         }
         listener?.start(queue: .global())
+        portSemaphore.wait()
+        if listenerFailed { throw SuuntoError.oauthCallbackError("Could not bind local callback server") }
+    }
 
+    func waitForCallback(timeout: TimeInterval = 90) -> Result<(code: String, state: String?), SuuntoError> {
         let result = semaphore.wait(timeout: .now() + timeout)
         listener?.cancel()
 
+        if listenerFailed { return .failure(.oauthCallbackError("Local callback server failed")) }
         if result == .timedOut { return .failure(.oauthCallbackTimeout) }
         if let err = error    { return .failure(.oauthCallbackError(err)) }
         if let code           { return .success((code: code, state: returnedState)) }
@@ -199,6 +216,7 @@ struct SuuntoOAuthFlow {
 
     func authorize() async throws -> SuuntoTokens {
         let server = try OAuthCallbackServer()
+        try server.start()
         let redirectURI = "http://localhost:\(server.port)/callback"
         let verifier    = pkceVerifier()
         let challenge   = pkceChallenge(from: verifier)
@@ -263,7 +281,8 @@ struct SuuntoOAuthFlow {
             "client_id":     clientID,
             "client_secret": clientSecret,
             "refresh_token": existing.refreshToken
-        ].map { "\($0.key)=\($0.value)" }.joined(separator: "&")
+        ].map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+         .joined(separator: "&")
         req.httpBody = body.data(using: .utf8)
 
         let (data, response) = try await URLSession.shared.data(for: req)
