@@ -248,7 +248,12 @@ struct FITParser {
                 // Compressed timestamp header: bits 7=1, 6-5=localMesgType, 4-0=time offset
                 let localType = (headerByte >> 5) & 0x03
                 let timeOffset = UInt32(headerByte & 0x1F)
-                lastTimestamp = (lastTimestamp & ~0x1F) | timeOffset
+                let lower = lastTimestamp & 0x1F
+                if timeOffset >= lower {
+                    lastTimestamp = (lastTimestamp & ~0x1F) | timeOffset
+                } else {
+                    lastTimestamp = ((lastTimestamp & ~0x1F) &+ 32) | timeOffset
+                }
                 if let def = mesgDefs[localType] {
                     let rawFields = try readDataMessage(reader: reader, def: def)
                     if def.globalMesgNum == FITGlobalMesgNum.record.rawValue {
