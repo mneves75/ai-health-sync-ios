@@ -25,6 +25,10 @@ struct MockHealthStore: HealthStoreProtocol {
     func executeSampleQuery(sampleType: HKSampleType, predicate: NSPredicate, limit: Int, sortDescriptors: [NSSortDescriptor], completion: @escaping @Sendable ([HKSample]?, Error?) -> Void) {
         completion([], nil)
     }
+
+    func execute(_ query: HKQuery) {
+        // No-op in tests — route queries are exercised separately
+    }
 }
 
 @Test

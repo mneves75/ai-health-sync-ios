@@ -137,6 +137,9 @@ actor HealthKitService {
         }
     }
 
+    private static let maxWorkoutsPerRouteExport = 50
+    private static let maxPointsPerRoute = 10_000
+
     func fetchRoutes(startDate: Date, endDate: Date) async -> RouteResponse {
         guard isAvailable() else {
             return RouteResponse(status: .error, routes: [], message: "Health data unavailable")
@@ -144,10 +147,10 @@ actor HealthKitService {
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
 
-        // 1. Fetch workouts in range
+        // 1. Fetch workouts in range — capped to prevent memory exhaustion
         let workouts: [HKWorkout] = await withCheckedContinuation { continuation in
             let q = HKSampleQuery(sampleType: HKObjectType.workoutType(), predicate: predicate,
-                                  limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, _ in
+                                  limit: Self.maxWorkoutsPerRouteExport, sortDescriptors: [sort]) { _, samples, _ in
                 continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
             }
             store.execute(q)
@@ -172,7 +175,7 @@ actor HealthKitService {
                 var points: [RoutePoint] = []
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                     let q = HKWorkoutRouteQuery(route: route) { _, locations, done, _ in
-                        for loc in locations ?? [] {
+                        for loc in locations ?? [] where points.count < Self.maxPointsPerRoute {
                             points.append(RoutePoint(
                                 latitude: loc.coordinate.latitude,
                                 longitude: loc.coordinate.longitude,

@@ -340,17 +340,39 @@ actor NetworkServer {
         return HTTPResponse.json(statusCode: 200, body: result)
     }
 
+    private static let maxRouteDays: Double = 90
+
     private func handleRoutes(_ request: HTTPRequest, requestId: String) async -> HTTPResponse {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         guard let payload = try? decoder.decode(RouteRequest.self, from: request.body) else {
             return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid request body")
         }
+
+        // Enforce max date range to bound memory usage
+        let rangeDays = payload.endDate.timeIntervalSince(payload.startDate) / 86_400
+        if rangeDays > Self.maxRouteDays {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Date range exceeds \(Int(Self.maxRouteDays))-day maximum for route export")
+        }
+
+        // Route access requires workouts to be enabled
+        let enabledTypes: [HealthDataType]
+        do { enabledTypes = try await loadEnabledTypes() } catch {
+            return HTTPResponse.plain(statusCode: 503, reason: "Service Unavailable", message: "Configuration unavailable")
+        }
+        guard enabledTypes.contains(.workouts) else {
+            await auditService.record(eventType: "security.unauthorized_access", details: [
+                "path": "/api/v1/health/routes", "requestId": requestId
+            ])
+            return HTTPResponse.plain(statusCode: 403, reason: "Forbidden", message: "Workout export must be enabled to access routes")
+        }
+
         let isProtected = await protectedDataAvailable()
         guard isProtected else {
             let response = RouteResponse(status: .locked, routes: [], message: "Device is locked")
             return HTTPResponse.json(statusCode: 423, reason: "Locked", body: response)
         }
+
         let result = await healthService.fetchRoutes(startDate: payload.startDate, endDate: payload.endDate)
         await auditService.record(eventType: "data.routes_read", details: [
             "routeCount": String(result.routes.count),
