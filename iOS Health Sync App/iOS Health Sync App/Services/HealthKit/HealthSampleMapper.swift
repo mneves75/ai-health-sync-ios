@@ -27,6 +27,11 @@ struct HealthSampleMapper {
                 return nil
             }
             let metadata = sleepMetadata(for: categorySample)
+            // value encodes the raw HKCategoryValue integer. For sleep types this is
+            // HKCategoryValueSleepAnalysis (see sleepMetadata for the decoded stage string).
+            // For cardiac events (irregularHeartRhythmEvent, highHeartRateEvent,
+            // lowHeartRateEvent) it is HKCategoryValuePresence: 0 = notPresent, 1 = present.
+            // For mindfulMinutes it is always HKCategoryValue.notApplicable (0).
             return HealthSampleDTO(
                 id: categorySample.uuid,
                 type: requestedType.rawValue,
