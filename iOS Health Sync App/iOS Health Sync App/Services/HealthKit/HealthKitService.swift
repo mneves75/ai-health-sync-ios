@@ -7,6 +7,7 @@ import os
 
 protocol HealthDataProviding: Sendable {
     func fetchSamples(types: [HealthDataType], startDate: Date, endDate: Date, limit: Int, offset: Int) async -> HealthDataResponse
+    func fetchRoutes(startDate: Date, endDate: Date) async -> RouteResponse
 }
 
 actor HealthKitService {
@@ -21,7 +22,11 @@ actor HealthKitService {
     }
 
     func requestAuthorization(for types: [HealthDataType]) async throws -> Bool {
-        let readTypes = Set(await MainActor.run { types.compactMap { $0.sampleType } })
+        var readTypes = Set(await MainActor.run { types.compactMap { $0.sampleType as HKObjectType? } })
+        // Always request workout route access alongside workout data
+        if types.contains(.workouts) {
+            readTypes.insert(HKSeriesType.workoutRoute())
+        }
         return try await withCheckedThrowingContinuation { continuation in
             store.requestAuthorization(toShare: [], read: readTypes) { success, error in
                 if let error {
@@ -130,6 +135,68 @@ actor HealthKitService {
                 continuation.resume(returning: samples)
             }
         }
+    }
+
+    func fetchRoutes(startDate: Date, endDate: Date) async -> RouteResponse {
+        guard isAvailable() else {
+            return RouteResponse(status: .error, routes: [], message: "Health data unavailable")
+        }
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+
+        // 1. Fetch workouts in range
+        let workouts: [HKWorkout] = await withCheckedContinuation { continuation in
+            let q = HKSampleQuery(sampleType: HKObjectType.workoutType(), predicate: predicate,
+                                  limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, _ in
+                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+            }
+            store.execute(q)
+        }
+
+        var routes: [WorkoutRoute] = []
+
+        for workout in workouts {
+            // 2. Fetch routes associated with this workout
+            let routeType = HKSeriesType.workoutRoute()
+            let workoutPredicate = HKQuery.predicateForObjects(from: workout)
+            let workoutRoutes: [HKWorkoutRoute] = await withCheckedContinuation { continuation in
+                let q = HKSampleQuery(sampleType: routeType, predicate: workoutPredicate,
+                                      limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
+                    continuation.resume(returning: (samples as? [HKWorkoutRoute]) ?? [])
+                }
+                store.execute(q)
+            }
+
+            for route in workoutRoutes {
+                // 3. Collect all CLLocation points from the route
+                var points: [RoutePoint] = []
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    let q = HKWorkoutRouteQuery(route: route) { _, locations, done, _ in
+                        for loc in locations ?? [] {
+                            points.append(RoutePoint(
+                                latitude: loc.coordinate.latitude,
+                                longitude: loc.coordinate.longitude,
+                                altitude: loc.altitude,
+                                timestamp: loc.timestamp,
+                                speed: loc.speed >= 0 ? loc.speed : nil,
+                                course: loc.course >= 0 ? loc.course : nil,
+                                horizontalAccuracy: loc.horizontalAccuracy >= 0 ? loc.horizontalAccuracy : nil,
+                                verticalAccuracy: loc.verticalAccuracy >= 0 ? loc.verticalAccuracy : nil
+                            ))
+                        }
+                        if done { continuation.resume() }
+                    }
+                    store.execute(q)
+                }
+                if !points.isEmpty {
+                    routes.append(WorkoutRoute(workoutId: workout.uuid, routeId: route.uuid,
+                                               startDate: route.startDate, endDate: route.endDate,
+                                               points: points))
+                }
+            }
+        }
+
+        return RouteResponse(status: .ok, routes: routes, message: nil)
     }
 
 }

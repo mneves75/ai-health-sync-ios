@@ -82,6 +82,8 @@ struct HealthSyncCLI {
             try await types(args: args)
         case "fetch":
             try await fetch(args: args)
+        case "routes":
+            try await routes(args: args)
         default:
             try usage()
         }
@@ -606,6 +608,77 @@ struct HealthSyncCLI {
             print("\(sample.id);\(sample.type);\(sample.value);\(sample.unit);\(startDateStr);\(endDateStr);\(escapedSource)")
         }
     }
+
+    // MARK: - Routes (GPS)
+
+    static func routes(args: [String]) async throws {
+        let options = try parseOptions(args)
+        guard let startString = options["--start"], let endString = options["--end"] else {
+            throw CLIError.invalidArguments("Missing --start and --end arguments")
+        }
+        if options["--dry-run"] == "true" {
+            print("Dry run: would call /api/v1/health/routes for \(startString) to \(endString)")
+            return
+        }
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        guard let startDate = formatter.date(from: startString) ?? ISO8601DateFormatter().date(from: startString),
+              let endDate = formatter.date(from: endString) ?? ISO8601DateFormatter().date(from: endString) else {
+            throw CLIError.invalidArguments("Invalid date format")
+        }
+
+        let outputDir = options["--output-dir"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+
+        let (config, token) = try ConfigStore.load()
+        let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
+        let request = RouteRequest(startDate: startDate, endDate: endDate)
+        let response: RouteResponse = try await client.send(path: "/api/v1/health/routes", method: "POST", body: request, authorized: true)
+
+        if response.status != .ok {
+            fputs("error: server returned status '\(response.status.rawValue)'\(response.message.map { ": \($0)" } ?? "")\n", stderr)
+            exit(1)
+        }
+
+        fputs("Fetched \(response.routes.count) route(s)\n", stderr)
+
+        if let outputDir {
+            try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+            for route in response.routes {
+                let gpx = makeGPX(route: route)
+                let fileName = "\(route.workoutId)-\(route.routeId).gpx"
+                let fileURL = outputDir.appendingPathComponent(fileName)
+                try gpx.write(to: fileURL, atomically: true, encoding: .utf8)
+                fputs("Wrote \(route.points.count) points → \(fileName)\n", stderr)
+            }
+        } else {
+            // Print GPX to stdout (one per route, separated by a comment)
+            for route in response.routes {
+                print(makeGPX(route: route))
+            }
+        }
+    }
+
+    private static func makeGPX(route: WorkoutRoute) -> String {
+        let df = ISO8601DateFormatter()
+        df.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var lines = [
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            "<gpx version=\"1.1\" creator=\"healthsync\" xmlns=\"http://www.topografix.com/GPX/1/1\">",
+            "  <trk>",
+            "    <trkseg>",
+        ]
+        for pt in route.points {
+            lines.append("      <trkpt lat=\"\(pt.latitude)\" lon=\"\(pt.longitude)\">")
+            lines.append("        <ele>\(pt.altitude)</ele>")
+            lines.append("        <time>\(df.string(from: pt.timestamp))</time>")
+            if let speed = pt.speed { lines.append("        <speed>\(speed)</speed>") }
+            if let course = pt.course { lines.append("        <course>\(course)</course>") }
+            lines.append("      </trkpt>")
+        }
+        lines += ["    </trkseg>", "  </trk>", "</gpx>"]
+        return lines.joined(separator: "\n")
+    }
 }
 
 struct ConfigStore {
@@ -1085,6 +1158,38 @@ struct HealthDataRequest: Codable {
 struct HealthDataResponse: Codable {
     let status: HealthDataStatus
     let samples: [HealthSampleDTO]
+    let message: String?
+    var hasMore: Bool = false
+    var returnedCount: Int = 0
+}
+
+struct RoutePoint: Codable {
+    let latitude: Double
+    let longitude: Double
+    let altitude: Double
+    let timestamp: Date
+    let speed: Double?
+    let course: Double?
+    let horizontalAccuracy: Double?
+    let verticalAccuracy: Double?
+}
+
+struct WorkoutRoute: Codable {
+    let workoutId: UUID
+    let routeId: UUID
+    let startDate: Date
+    let endDate: Date
+    let points: [RoutePoint]
+}
+
+struct RouteRequest: Codable {
+    let startDate: Date
+    let endDate: Date
+}
+
+struct RouteResponse: Codable {
+    let status: HealthDataStatus
+    let routes: [WorkoutRoute]
     let message: String?
 }
 

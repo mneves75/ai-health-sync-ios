@@ -194,6 +194,8 @@ actor NetworkServer {
             return await handleTypes(requestId: requestId)
         case ("POST", "/api/v1/health/data"):
             return await handleHealthData(request, requestId: requestId)
+        case ("POST", "/api/v1/health/routes"):
+            return await handleRoutes(request, requestId: requestId)
         default:
             return HTTPResponse.plain(statusCode: 404, reason: "Not Found", message: "Unknown route")
         }
@@ -335,6 +337,25 @@ actor NetworkServer {
         if result.status == .ok {
             await updateLastExport()
         }
+        return HTTPResponse.json(statusCode: 200, body: result)
+    }
+
+    private func handleRoutes(_ request: HTTPRequest, requestId: String) async -> HTTPResponse {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let payload = try? decoder.decode(RouteRequest.self, from: request.body) else {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid request body")
+        }
+        let isProtected = await protectedDataAvailable()
+        guard isProtected else {
+            let response = RouteResponse(status: .locked, routes: [], message: "Device is locked")
+            return HTTPResponse.json(statusCode: 423, reason: "Locked", body: response)
+        }
+        let result = await healthService.fetchRoutes(startDate: payload.startDate, endDate: payload.endDate)
+        await auditService.record(eventType: "data.routes_read", details: [
+            "routeCount": String(result.routes.count),
+            "requestId": requestId
+        ])
         return HTTPResponse.json(statusCode: 200, body: result)
     }
 

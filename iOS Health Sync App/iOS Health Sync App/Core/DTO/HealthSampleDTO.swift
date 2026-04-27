@@ -67,3 +67,33 @@ struct PairingQRCode: Codable, Sendable {
     let expiresAt: Date
     let certificateFingerprint: String
 }
+
+struct RoutePoint: Codable, Sendable {
+    let latitude: Double
+    let longitude: Double
+    let altitude: Double
+    let timestamp: Date
+    let speed: Double?
+    let course: Double?
+    let horizontalAccuracy: Double?
+    let verticalAccuracy: Double?
+}
+
+struct WorkoutRoute: Codable, Sendable {
+    let workoutId: UUID
+    let routeId: UUID
+    let startDate: Date
+    let endDate: Date
+    let points: [RoutePoint]
+}
+
+struct RouteRequest: Codable, Sendable {
+    let startDate: Date
+    let endDate: Date
+}
+
+struct RouteResponse: Codable, Sendable {
+    let status: HealthDataStatus
+    let routes: [WorkoutRoute]
+    let message: String?
+}
