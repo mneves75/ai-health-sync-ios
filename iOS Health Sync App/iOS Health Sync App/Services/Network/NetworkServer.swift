@@ -194,6 +194,10 @@ actor NetworkServer {
             return await handleTypes(requestId: requestId)
         case ("POST", "/api/v1/health/data"):
             return await handleHealthData(request, requestId: requestId)
+        case ("POST", "/api/v1/health/ecg"):
+            return await handleECG(request, requestId: requestId)
+        case ("POST", "/api/v1/health/hrv-series"):
+            return await handleHRVSeries(request, requestId: requestId)
         default:
             return HTTPResponse.plain(statusCode: 404, reason: "Not Found", message: "Unknown route")
         }
@@ -335,6 +339,77 @@ actor NetworkServer {
         if result.status == .ok {
             await updateLastExport()
         }
+        return HTTPResponse.json(statusCode: 200, body: result)
+    }
+
+    /// Maximum date range for ECG/HRV requests (90 days)
+    private static let maxWatchDataDays: Double = 90
+
+    private func handleECG(_ request: HTTPRequest, requestId: String) async -> HTTPResponse {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let payload: ECGRequest
+        do {
+            payload = try decoder.decode(ECGRequest.self, from: request.body)
+        } catch {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid request body")
+        }
+        if payload.endDate < payload.startDate {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid date range")
+        }
+        let rangeDays = payload.endDate.timeIntervalSince(payload.startDate) / 86_400
+        if rangeDays > Self.maxWatchDataDays {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Date range must not exceed \(Int(Self.maxWatchDataDays)) days")
+        }
+
+        let isProtected = await protectedDataAvailable()
+        guard isProtected else {
+            let response = ECGResponse(status: .locked, readings: [], message: "Device is locked", truncated: false)
+            await auditService.record(eventType: "data.read", details: ["status": "locked", "path": "/api/v1/health/ecg", "requestId": requestId])
+            return HTTPResponse.json(statusCode: 423, reason: "Locked", body: response)
+        }
+
+        let result = await healthService.fetchECG(startDate: payload.startDate, endDate: payload.endDate)
+        await auditService.record(eventType: "data.read", details: [
+            "path": "/api/v1/health/ecg",
+            "count": String(result.readings.count),
+            "truncated": String(result.truncated),
+            "requestId": requestId
+        ])
+        return HTTPResponse.json(statusCode: 200, body: result)
+    }
+
+    private func handleHRVSeries(_ request: HTTPRequest, requestId: String) async -> HTTPResponse {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let payload: HRVSeriesRequest
+        do {
+            payload = try decoder.decode(HRVSeriesRequest.self, from: request.body)
+        } catch {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid request body")
+        }
+        if payload.endDate < payload.startDate {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Invalid date range")
+        }
+        let rangeDays = payload.endDate.timeIntervalSince(payload.startDate) / 86_400
+        if rangeDays > Self.maxWatchDataDays {
+            return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Date range must not exceed \(Int(Self.maxWatchDataDays)) days")
+        }
+
+        let isProtected = await protectedDataAvailable()
+        guard isProtected else {
+            let response = HRVSeriesResponse(status: .locked, series: [], message: "Device is locked", truncated: false)
+            await auditService.record(eventType: "data.read", details: ["status": "locked", "path": "/api/v1/health/hrv-series", "requestId": requestId])
+            return HTTPResponse.json(statusCode: 423, reason: "Locked", body: response)
+        }
+
+        let result = await healthService.fetchHRVSeries(startDate: payload.startDate, endDate: payload.endDate)
+        await auditService.record(eventType: "data.read", details: [
+            "path": "/api/v1/health/hrv-series",
+            "count": String(result.series.count),
+            "truncated": String(result.truncated),
+            "requestId": requestId
+        ])
         return HTTPResponse.json(statusCode: 200, body: result)
     }
 

@@ -82,6 +82,10 @@ struct HealthSyncCLI {
             try await types(args: args)
         case "fetch":
             try await fetch(args: args)
+        case "ecg":
+            try await ecg(args: args)
+        case "hrv-series":
+            try await hrvSeries(args: args)
         default:
             try usage()
         }
@@ -120,6 +124,8 @@ struct HealthSyncCLI {
           status [--dry-run]               Fetch server status
           types [--dry-run]                Fetch enabled data types
           fetch --start <iso> --end <iso> --types <list> [--format csv|json] [--dry-run]  (default: csv)
+          ecg --start <iso> --end <iso> [--format json|csv] [--dry-run]
+          hrv-series --start <iso> --end <iso> [--format json|csv] [--dry-run]
           version, --version, -v           Show version information
 
         QUICK START:
@@ -604,6 +610,178 @@ struct HealthSyncCLI {
             // Escape semicolons in source name if present
             let escapedSource = sample.sourceName.replacingOccurrences(of: ";", with: "\\;")
             print("\(sample.id);\(sample.type);\(sample.value);\(sample.unit);\(startDateStr);\(endDateStr);\(escapedSource)")
+        }
+    }
+}
+
+// MARK: - ECG / HRV CLI DTOs
+
+struct ECGVoltageSample: Codable {
+    let timeSinceStartSeconds: Double
+    let voltageMillivolts: Double
+}
+
+struct ECGReading: Codable {
+    let id: UUID
+    let startDate: Date
+    let endDate: Date
+    let classification: String
+    let averageHeartRateBPM: Double?
+    let samplingFrequencyHz: Double?
+    let numberOfMeasurements: Int
+    let symptomsPresent: Bool
+    let voltageSamples: [ECGVoltageSample]
+}
+
+struct ECGRequest: Codable {
+    let startDate: Date
+    let endDate: Date
+}
+
+struct ECGResponse: Codable {
+    let status: String
+    let readings: [ECGReading]
+    let message: String?
+    let truncated: Bool
+}
+
+struct RRInterval: Codable {
+    let timeSinceStartSeconds: Double
+    let intervalSeconds: Double
+    let isPrecededByABeat: Bool
+}
+
+struct HRVSeries: Codable {
+    let id: UUID
+    let startDate: Date
+    let endDate: Date
+    let intervals: [RRInterval]
+    let sdnnMilliseconds: Double?
+    let rmssdMilliseconds: Double?
+}
+
+struct HRVSeriesRequest: Codable {
+    let startDate: Date
+    let endDate: Date
+}
+
+struct HRVSeriesResponse: Codable {
+    let status: String
+    let series: [HRVSeries]
+    let message: String?
+    let truncated: Bool
+}
+
+// MARK: - ECG Command
+
+extension HealthSyncCLI {
+    static func ecg(args: [String]) async throws {
+        let options = try parseOptions(args)
+        guard let startStr = options["--start"], let endStr = options["--end"] else {
+            throw CLIError.invalidArguments("Usage: healthsync ecg --start <iso> --end <iso> [--format json|csv]")
+        }
+        let dryRun = options["--dry-run"] == "true"
+        let format = options["--format"] ?? "json"
+
+        let startDate = try parseISO8601Date(startStr)
+        let endDate = try parseISO8601Date(endStr)
+        guard endDate >= startDate else {
+            throw CLIError.invalidArguments("--end must be after --start")
+        }
+
+        let (config, token) = try ConfigStore.load()
+        let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
+
+        if dryRun {
+            print("DRY RUN: would POST /api/v1/health/ecg [\(startStr) … \(endStr)]")
+            return
+        }
+
+        let body = ECGRequest(startDate: startDate, endDate: endDate)
+        let response: ECGResponse = try await client.send(path: "/api/v1/health/ecg", method: "POST", body: body, authorized: true)
+
+        if response.truncated {
+            fputs("Warning: result was truncated — narrow your date range for complete data.\n", stderr)
+        }
+
+        switch format {
+        case "csv":
+            printECGCSV(response.readings)
+        default:
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            if let data = try? encoder.encode(response), let str = String(data: data, encoding: .utf8) {
+                print(str)
+            }
+        }
+    }
+
+    private static func printECGCSV(_ readings: [ECGReading]) {
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime]
+        print("id;startDate;endDate;classification;averageHeartRateBPM;samplingFrequencyHz;numberOfMeasurements;symptomsPresent;voltageSampleCount")
+        for r in readings {
+            let hr = r.averageHeartRateBPM.map { String(format: "%.1f", $0) } ?? ""
+            let freq = r.samplingFrequencyHz.map { String(format: "%.1f", $0) } ?? ""
+            print("\(r.id);\(fmt.string(from: r.startDate));\(fmt.string(from: r.endDate));\(r.classification);\(hr);\(freq);\(r.numberOfMeasurements);\(r.symptomsPresent);\(r.voltageSamples.count)")
+        }
+    }
+}
+
+// MARK: - HRV Series Command
+
+extension HealthSyncCLI {
+    static func hrvSeries(args: [String]) async throws {
+        let options = try parseOptions(args)
+        guard let startStr = options["--start"], let endStr = options["--end"] else {
+            throw CLIError.invalidArguments("Usage: healthsync hrv-series --start <iso> --end <iso> [--format json|csv]")
+        }
+        let dryRun = options["--dry-run"] == "true"
+        let format = options["--format"] ?? "json"
+
+        let startDate = try parseISO8601Date(startStr)
+        let endDate = try parseISO8601Date(endStr)
+        guard endDate >= startDate else {
+            throw CLIError.invalidArguments("--end must be after --start")
+        }
+
+        let (config, token) = try ConfigStore.load()
+        let client = HealthSyncClient(host: config.host, port: config.port, token: token, fingerprint: config.fingerprint)
+
+        if dryRun {
+            print("DRY RUN: would POST /api/v1/health/hrv-series [\(startStr) … \(endStr)]")
+            return
+        }
+
+        let body = HRVSeriesRequest(startDate: startDate, endDate: endDate)
+        let response: HRVSeriesResponse = try await client.send(path: "/api/v1/health/hrv-series", method: "POST", body: body, authorized: true)
+
+        if response.truncated {
+            fputs("Warning: result was truncated — narrow your date range for complete data.\n", stderr)
+        }
+
+        switch format {
+        case "csv":
+            printHRVCSV(response.series)
+        default:
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            if let data = try? encoder.encode(response), let str = String(data: data, encoding: .utf8) {
+                print(str)
+            }
+        }
+    }
+
+    private static func printHRVCSV(_ series: [HRVSeries]) {
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime]
+        print("id;startDate;endDate;intervalCount;sdnnMs;rmssdMs")
+        for s in series {
+            let sdnn = s.sdnnMilliseconds.map { String(format: "%.3f", $0) } ?? ""
+            let rmssd = s.rmssdMilliseconds.map { String(format: "%.3f", $0) } ?? ""
+            print("\(s.id);\(fmt.string(from: s.startDate));\(fmt.string(from: s.endDate));\(s.intervals.count);\(sdnn);\(rmssd)")
         }
     }
 }

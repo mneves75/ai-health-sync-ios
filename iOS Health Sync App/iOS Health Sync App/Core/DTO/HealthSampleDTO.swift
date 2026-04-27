@@ -67,3 +67,63 @@ struct PairingQRCode: Codable, Sendable {
     let expiresAt: Date
     let certificateFingerprint: String
 }
+
+// MARK: - ECG
+
+struct ECGVoltageSample: Codable, Sendable {
+    let timeSinceStartSeconds: Double
+    let voltageMillivolts: Double
+}
+
+struct ECGReading: Codable, Sendable {
+    let id: UUID
+    let startDate: Date
+    let endDate: Date
+    let classification: String
+    let averageHeartRateBPM: Double?
+    let samplingFrequencyHz: Double?
+    let numberOfMeasurements: Int
+    let symptomsPresent: Bool
+    let voltageSamples: [ECGVoltageSample]
+}
+
+struct ECGRequest: Codable, Sendable {
+    let startDate: Date
+    let endDate: Date
+}
+
+struct ECGResponse: Codable, Sendable {
+    let status: HealthDataStatus
+    let readings: [ECGReading]
+    let message: String?
+    let truncated: Bool
+}
+
+// MARK: - HRV Series
+
+struct RRInterval: Codable, Sendable {
+    let timeSinceStartSeconds: Double
+    let intervalSeconds: Double
+    let isPrecededByABeat: Bool
+}
+
+struct HRVSeries: Codable, Sendable {
+    let id: UUID
+    let startDate: Date
+    let endDate: Date
+    let intervals: [RRInterval]
+    let sdnnMilliseconds: Double?
+    let rmssdMilliseconds: Double?
+}
+
+struct HRVSeriesRequest: Codable, Sendable {
+    let startDate: Date
+    let endDate: Date
+}
+
+struct HRVSeriesResponse: Codable, Sendable {
+    let status: HealthDataStatus
+    let series: [HRVSeries]
+    let message: String?
+    let truncated: Bool
+}

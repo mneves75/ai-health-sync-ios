@@ -8,6 +8,7 @@ protocol HealthStoreProtocol {
     func authorizationStatus(for type: HKObjectType) -> HKAuthorizationStatus
     func getRequestStatusForAuthorization(toShare typesToShare: Set<HKSampleType>, read typesToRead: Set<HKObjectType>, completion: @escaping @Sendable (HKAuthorizationRequestStatus, Error?) -> Void)
     func executeSampleQuery(sampleType: HKSampleType, predicate: NSPredicate, limit: Int, sortDescriptors: [NSSortDescriptor], completion: @escaping @Sendable ([HKSample]?, Error?) -> Void)
+    func execute(_ query: HKQuery)
 }
 
 extension HKHealthStore: HealthStoreProtocol {
