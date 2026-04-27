@@ -314,6 +314,17 @@ actor NetworkServer {
             return HTTPResponse.plain(statusCode: 400, reason: "Bad Request", message: "Limit must be positive")
         }
 
+        // Check device lock state first — config read is unnecessary if device is locked.
+        let isProtected = await protectedDataAvailable()
+        guard isProtected else {
+            let response = HealthDataResponse(status: .locked, samples: [], message: "Device is locked", hasMore: false, returnedCount: 0)
+            await auditService.record(eventType: "data.read", details: [
+                "status": "locked",
+                "requestId": requestId
+            ])
+            return HTTPResponse.json(statusCode: 423, reason: "Locked", body: response)
+        }
+
         let enabledTypes: [HealthDataType]
         do {
             enabledTypes = try await loadEnabledTypes()
@@ -329,16 +340,6 @@ actor NetworkServer {
                 "requestId": requestId
             ])
             return HTTPResponse.plain(statusCode: 403, reason: "Forbidden", message: "Requested data types are not enabled")
-        }
-
-        let isProtected = await protectedDataAvailable()
-        guard isProtected else {
-            let response = HealthDataResponse(status: .locked, samples: [], message: "Device is locked", hasMore: false, returnedCount: 0)
-            await auditService.record(eventType: "data.read", details: [
-                "status": "locked",
-                "requestId": requestId
-            ])
-            return HTTPResponse.json(statusCode: 423, reason: "Locked", body: response)
         }
 
         let result = await healthService.fetchSamples(types: payload.types, startDate: payload.startDate, endDate: payload.endDate, limit: limit, offset: offset)

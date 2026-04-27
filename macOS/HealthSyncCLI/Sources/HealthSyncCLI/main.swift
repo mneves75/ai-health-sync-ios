@@ -1088,16 +1088,38 @@ struct HealthDataResponse: Codable {
     let message: String?
 }
 
-struct StatusResponse: Codable {
+struct StatusResponse: Decodable {
     let status: String
     let version: String
     let deviceName: String
     let enabledTypes: [HealthDataType]
     let serverTime: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case status, version, deviceName, enabledTypes, serverTime
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        status = try c.decode(String.self, forKey: .status)
+        version = try c.decode(String.self, forKey: .version)
+        deviceName = try c.decode(String.self, forKey: .deviceName)
+        serverTime = try c.decode(Date.self, forKey: .serverTime)
+        let rawTypes = try c.decode([String].self, forKey: .enabledTypes)
+        enabledTypes = rawTypes.compactMap { HealthDataType(rawValue: $0) }
+    }
 }
 
-struct TypesResponse: Codable {
+struct TypesResponse: Decodable {
     let enabledTypes: [HealthDataType]
+
+    private enum CodingKeys: String, CodingKey { case enabledTypes }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let rawTypes = try c.decode([String].self, forKey: .enabledTypes)
+        enabledTypes = rawTypes.compactMap { HealthDataType(rawValue: $0) }
+    }
 }
 
 struct PairRequest: Codable {
