@@ -224,6 +224,133 @@ final class AppState {
         }
     }
 
+    // MARK: - Manual Export
+
+    enum ManualExportFormat: String, Sendable, Hashable {
+        case csv, json
+    }
+
+    enum ManualExportError: Error, LocalizedError {
+        case noTypesSelected
+        case writeFailed(String)
+        var errorDescription: String? {
+            switch self {
+            case .noTypesSelected:        return "No categories selected to export."
+            case .writeFailed(let why):   return "Could not write export file: \(why)"
+            }
+        }
+    }
+
+    struct ManualExportResult: Sendable {
+        let url: URL
+        let sampleCount: Int
+    }
+
+    /// Fetches health samples for the given types over the given range and writes
+    /// them to a temp file in the requested format. Caller (ManualExportView)
+    /// presents the resulting URL via ShareLink so the user can save to Files /
+    /// AirDrop / Mail / iCloud Drive / Messages.
+    ///
+    /// Caps total samples at 100k as a safety so a 90-day pull on a heavily-used
+    /// device can't allocate hundreds of MB. Updates `lastExportAt` and emits
+    /// an audit event.
+    func runManualExport(
+        types: [HealthDataType],
+        startDate: Date,
+        endDate: Date,
+        format: ManualExportFormat
+    ) async throws -> ManualExportResult {
+        guard !types.isEmpty else { throw ManualExportError.noTypesSelected }
+
+        // Page through fetchSamples to avoid hitting the per-call limit.
+        var collected: [HealthSampleDTO] = []
+        var offset = 0
+        let pageSize = 5_000
+        let safetyCap = 100_000
+        while collected.count < safetyCap {
+            let response = await healthService.fetchSamples(
+                types: types,
+                startDate: startDate,
+                endDate: endDate,
+                limit: pageSize,
+                offset: offset
+            )
+            collected.append(contentsOf: response.samples)
+            if !response.hasMore || response.samples.isEmpty { break }
+            offset += pageSize
+        }
+
+        // Build filename with ISO-8601 timestamp (sanitized for HFS).
+        let stamp = Self.exportFilenameTimestamp(for: Date())
+        let ext = format == .csv ? "csv" : "json"
+        let filename = "healthsync-export-\(stamp).\(ext)"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+
+        do {
+            let data: Data
+            switch format {
+            case .csv:
+                data = Self.makeCSV(samples: collected).data(using: .utf8) ?? Data()
+            case .json:
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                data = try encoder.encode(collected)
+            }
+            try data.write(to: url, options: .atomic)
+        } catch {
+            throw ManualExportError.writeFailed(error.localizedDescription)
+        }
+
+        syncConfiguration.lastExportAt = Date()
+        try? modelContainer.mainContext.save()
+        await auditService.record(eventType: "data.manual_export", details: [
+            "format":      format.rawValue,
+            "sampleCount": String(collected.count),
+            "typeCount":   String(types.count),
+            "rangeDays":   String(Int(endDate.timeIntervalSince(startDate) / 86_400))
+        ])
+
+        return ManualExportResult(url: url, sampleCount: collected.count)
+    }
+
+    /// Filename-safe ISO-8601 timestamp ("2026-04-27T14-32-05Z" — colons replaced).
+    private static func exportFilenameTimestamp(for date: Date) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f.string(from: date).replacingOccurrences(of: ":", with: "-")
+    }
+
+    /// CSV format matches the Mac CLI's `healthsync fetch --format csv` output:
+    /// semicolon-separated, ISO-8601 dates, with proper escaping for fields
+    /// containing the delimiter or quotes.
+    private static func makeCSV(samples: [HealthSampleDTO]) -> String {
+        var lines: [String] = ["id;type;value;unit;startDate;endDate;sourceName"]
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        for s in samples {
+            let row = [
+                s.id.uuidString,
+                s.type,
+                String(s.value),
+                escapeCSV(s.unit),
+                formatter.string(from: s.startDate),
+                formatter.string(from: s.endDate),
+                escapeCSV(s.sourceName)
+            ].joined(separator: ";")
+            lines.append(row)
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func escapeCSV(_ field: String) -> String {
+        if field.contains(";") || field.contains("\"") || field.contains("\n") {
+            let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
+            return "\"\(escaped)\""
+        }
+        return field
+    }
+
     /// Replaces the entire enabled-types set in one update. Used by preset
     /// application. If the new set adds types that have not been authorized,
     /// also requests authorization for them so the OS shows the dialog —

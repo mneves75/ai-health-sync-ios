@@ -40,11 +40,16 @@ struct ContentView: View {
                     // will be shared *before* pairing, not after.
                     if appState.healthAuthorizationStatus {
                         dataTypesSection
+                        manualExportSection
                     }
                     auditSection
                     settingsSection
                 }
                 .listStyle(.insetGrouped)
+                .sheet(isPresented: $showingManualExport) {
+                    ManualExportView()
+                        .environment(appState)
+                }
             }
             .navigationTitle("HealthSync")
             .searchable(
@@ -434,6 +439,7 @@ struct ContentView: View {
     @State private var showRevokeConfirmation = false
     @State private var pendingSensitiveType: HealthDataType?
     @State private var showFingerprintExpanded = false
+    @State private var showingManualExport = false
 
     /// Static expiry display. The previous live ticker created anxiety while the
     /// user was mid-pairing on a Mac across the room. A static "Valid until 3:42 PM"
@@ -693,6 +699,40 @@ struct ContentView: View {
         }
     }
 
+    /// Manual Export — opens a sheet that fetches the enabled types over a
+    /// chosen date range and presents a system share sheet so the user can
+    /// save to Files / iCloud Drive / AirDrop / Mail / Messages without ever
+    /// pairing a Mac. The iPhone-side counterpart to the Mac CLI's fetch.
+    private var manualExportSection: some View {
+        Section {
+            Button {
+                HapticFeedback.impact(.light)
+                showingManualExport = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.and.arrow.up.on.square")
+                        .foregroundStyle(.tint)
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Export to a File")
+                            .foregroundStyle(.primary)
+                        Text("Save your data as CSV or JSON without a Mac")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens the manual export screen")
+        } header: {
+            Text("Export")
+        }
+    }
+
     private var dataTypesSection: some View {
         Section {
             ForEach(HealthDataType.Category.allCases, id: \.self) { category in
@@ -901,6 +941,7 @@ struct ContentView: View {
         case "security.rate_limit_exceeded":  return "speedometer"
         case "data.read":                     return "doc.text.fill"
         case "data.routes_read":              return "map.fill"
+        case "data.manual_export":            return "square.and.arrow.up.on.square.fill"
         default: break
         }
         // Category prefix fallback
@@ -942,6 +983,7 @@ struct ContentView: View {
         case "security.rate_limit_exceeded":  return "Rate Limit Exceeded"
         case "data.read":                     return "Health Data Read"
         case "data.routes_read":              return "GPS Routes Read"
+        case "data.manual_export":            return "Manual Export"
         default:                              return eventType
         }
     }

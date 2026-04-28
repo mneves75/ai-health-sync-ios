@@ -147,6 +147,7 @@ enum AuditEventStyling {
         case "security.rate_limit_exceeded":  return "speedometer"
         case "data.read":                     return "doc.text.fill"
         case "data.routes_read":              return "map.fill"
+        case "data.manual_export":            return "square.and.arrow.up.on.square.fill"
         default: break
         }
         switch eventType.split(separator: ".").first.map(String.init) ?? "" {
@@ -182,6 +183,7 @@ enum AuditEventStyling {
         case "security.rate_limit_exceeded":  return "Rate Limit Exceeded"
         case "data.read":                     return "Health Data Read"
         case "data.routes_read":              return "GPS Routes Read"
+        case "data.manual_export":            return "Manual Export"
         default:                              return eventType
         }
     }
