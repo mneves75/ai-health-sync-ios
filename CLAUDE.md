@@ -1,6 +1,9 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Repository guidelines:
+
+@AGENTS.md
 
 ## Overview
 
@@ -24,7 +27,7 @@ xcodebuild test -project "iOS Health Sync App/iOS Health Sync App.xcodeproj" \
 # Run single iOS test
 xcodebuild test -project "iOS Health Sync App/iOS Health Sync App.xcodeproj" \
   -scheme "HealthSyncTests" -destination 'platform=iOS Simulator,name=iPhone 16' \
-  -only-testing:iOS_Health_Sync_AppTests/<TestClass>/<testMethod>
+  -only-testing:HealthSyncTests/<TestSuite>/<testFunction>()
 
 # macOS CLI
 cd macOS/HealthSyncCLI && swift build && swift test

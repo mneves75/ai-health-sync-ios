@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Agent instructions checked against the project (owner's instruction audit, 2026-11-09):
+  `CLAUDE.md` imports `AGENTS.md` on its own line, and the single-test command names the real
+  target `HealthSyncTests` with a Swift Testing selector.
+- New `.claude/settings.json`: a Stop hook runs the macOS CLI's `swift test` when the tree
+  changed since the last green run.
 - Privacy and support pages use the conhecendotudo.com.br brand and contact instead of a personal name or address.
 
 ## [1.0.0] - 2026-02-26

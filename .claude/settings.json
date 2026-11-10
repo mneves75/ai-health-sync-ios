@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/hooks/claude-gate\" ] || \"$HOME/.claude/hooks/claude-gate\" baseline"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/hooks/claude-gate\" ] || \"$HOME/.claude/hooks/claude-gate\" stop -- 'cd macOS/HealthSyncCLI && swift test'",
+            "timeout": 900
+          }
+        ]
+      }
+    ]
+  }
+}
